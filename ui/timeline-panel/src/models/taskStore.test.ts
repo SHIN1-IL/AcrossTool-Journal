@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { clearTaskStoreFromIndexedDB } from "../storage/taskStorage";
 import {
+  clearCategoryFromAllTasks,
   createEmptyTasks,
   createInitialTaskStore,
   dateKey,
@@ -59,13 +60,28 @@ describe("taskStore", () => {
       { id: 1, label: "운동", completed: false, category: "운동" },
       { id: 2, label: "공부", completed: false, category: "학습" },
       { id: 3, label: "메일", completed: false, category: "업무" },
-      { id: 4, label: "", completed: false },
+      { id: 4, label: "", completed: false, category: "운동" },
       { id: 5, label: "", completed: false },
     ];
 
     expect(filterTasksByCategory(tasks, "전체")).toHaveLength(5);
     expect(filterTasksByCategory(tasks, "운동")).toHaveLength(1);
     expect(filterTasksByCategory(tasks, "학습")[0]?.label).toBe("공부");
+  });
+
+  it("clears a deleted category from all dated tasks", () => {
+    const store = {
+      "2026-06-11": [
+        { id: 1, label: "취미", completed: false, category: "취미" },
+        { id: 2, label: "", completed: false },
+        { id: 3, label: "", completed: false },
+        { id: 4, label: "", completed: false },
+        { id: 5, label: "", completed: false },
+      ],
+    };
+
+    const updated = clearCategoryFromAllTasks(store, "취미");
+    expect(updated["2026-06-11"]?.[0]?.category).toBeUndefined();
   });
 
   it("loads initial store when IndexedDB is empty", async () => {

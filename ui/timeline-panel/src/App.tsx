@@ -3,12 +3,11 @@ import { Calendar } from "./components/Calendar";
 import { CategoryFilterMenu } from "./components/CategoryFilterMenu";
 import { MobileBottomSheet } from "./components/MobileBottomSheet";
 import { TimelinePanel } from "./components/TimelinePanel";
+import { useCategories } from "./hooks/useCategories";
 import { useTaskStore } from "./hooks/useTaskStore";
+import { FILTER_ALL } from "./models/categoryStore";
 import { buildCompletionRateMap } from "./models/completionRate";
-import {
-  filterTasksByCategory,
-  type CategoryFilter,
-} from "./models/taskStore";
+import { filterTasksByCategory } from "./models/taskStore";
 
 const WIDE_LAYOUT_QUERY = "(min-width: 600px)";
 
@@ -42,44 +41,43 @@ function AppBar({
 
 export default function App() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
-  const [selectedCategory, setSelectedCategory] =
-    useState<CategoryFilter>("전체");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [isWideLayout, setIsWideLayout] = useState(
     () => window.matchMedia(WIDE_LAYOUT_QUERY).matches,
   );
 
-  const { taskStore, tasks, ensureDate, handleToggle, handleLabelChange } =
-    useTaskStore(selectedDate);
+  const {
+    selectedCategory,
+    filterOptions,
+    assignableCategories,
+    setSelectedCategory,
+    addCategory,
+    removeCategory,
+  } = useCategories();
+
+  const {
+    taskStore,
+    tasks,
+    ensureDate,
+    handleToggle,
+    handleLabelChange,
+    handleCategoryChange,
+    clearCategory,
+  } = useTaskStore(selectedDate);
 
   const completionRates = useMemo(
     () => buildCompletionRateMap(taskStore, selectedCategory),
     [taskStore, selectedCategory],
   );
 
-  const filteredTasks = useMemo(
+  const displayTasks = useMemo(
     () => filterTasksByCategory(tasks, selectedCategory),
     [tasks, selectedCategory],
   );
 
-  const displayTasks = useMemo(() => {
-    if (selectedCategory === "전체") {
-      return tasks;
-    }
-
-    const visible = filteredTasks;
-    const padded = [...visible];
-    while (padded.length < 5) {
-      padded.push({
-        id: padded.length + 1,
-        label: "",
-        completed: false,
-      });
-    }
-
-    return padded.slice(0, 5);
-  }, [tasks, filteredTasks, selectedCategory]);
+  const filterLabel =
+    selectedCategory === FILTER_ALL ? undefined : selectedCategory;
 
   useEffect(() => {
     const media = window.matchMedia(WIDE_LAYOUT_QUERY);
@@ -100,6 +98,11 @@ export default function App() {
     if (!isWideLayout) {
       setIsMobileSheetOpen(true);
     }
+  };
+
+  const handleRemoveCategory = (name: string) => {
+    removeCategory(name);
+    clearCategory(name);
   };
 
   return (
@@ -129,8 +132,11 @@ export default function App() {
               <TimelinePanel
                 selectedDate={selectedDate}
                 tasks={displayTasks}
+                categories={assignableCategories}
+                filterLabel={filterLabel}
                 onToggle={handleToggle}
                 onLabelChange={handleLabelChange}
+                onCategoryChange={handleCategoryChange}
               />
             </div>
           </div>
@@ -146,8 +152,11 @@ export default function App() {
 
         {isFilterOpen && (
           <CategoryFilterMenu
+            filterOptions={filterOptions}
             selectedCategory={selectedCategory}
             onSelect={setSelectedCategory}
+            onAddCategory={addCategory}
+            onRemoveCategory={handleRemoveCategory}
             onClose={() => setIsFilterOpen(false)}
           />
         )}
@@ -156,6 +165,7 @@ export default function App() {
           <MobileBottomSheet
             selectedDate={selectedDate}
             tasks={displayTasks}
+            filterLabel={filterLabel}
             onToggle={handleToggle}
             onClose={() => setIsMobileSheetOpen(false)}
           />

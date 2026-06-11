@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  clearCategoryFromAllTasks,
   createInitialTaskStore,
   ensureTasksForDate,
   getTasksForDate,
   loadTaskStore,
   saveTaskStore,
   toggleTask,
+  updateTaskCategory,
   updateTaskLabel,
 } from "../models/taskStore";
 
@@ -56,6 +58,19 @@ export function useTaskStore(selectedDate: Date) {
     [selectedDate],
   );
 
+  const handleCategoryChange = useCallback(
+    (taskId: number, category: string | undefined) => {
+      setTaskStore((prev) =>
+        updateTaskCategory(prev, selectedDate, taskId, category),
+      );
+    },
+    [selectedDate],
+  );
+
+  const clearCategory = useCallback((category: string) => {
+    setTaskStore((prev) => clearCategoryFromAllTasks(prev, category));
+  }, []);
+
   return {
     taskStore,
     tasks,
@@ -63,5 +78,7 @@ export function useTaskStore(selectedDate: Date) {
     ensureDate,
     handleToggle,
     handleLabelChange,
+    handleCategoryChange,
+    clearCategory,
   };
 }

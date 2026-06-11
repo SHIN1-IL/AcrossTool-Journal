@@ -1,3 +1,5 @@
+import type { CategoryFilter } from "./categoryStore";
+import { FILTER_ALL } from "./categoryStore";
 import {
   loadPersistedTaskStore,
   savePersistedTaskStore,
@@ -5,11 +7,8 @@ import {
 } from "../storage/taskStorage";
 import { MAX_TASK_SLOTS, type TaskSlot } from "../types";
 
-export { STORAGE_KEY };
-
-export const DEFAULT_CATEGORIES = ["전체", "운동", "학습", "업무", "루틴"] as const;
-
-export type CategoryFilter = (typeof DEFAULT_CATEGORIES)[number];
+export { STORAGE_KEY, FILTER_ALL };
+export type { CategoryFilter };
 
 const SAMPLE_TASKS: TaskSlot[] = [
   { id: 1, label: "아침 스트레칭", completed: true, category: "운동" },
@@ -102,6 +101,37 @@ export function updateTaskLabel(
   };
 }
 
+export function updateTaskCategory(
+  store: Record<string, TaskSlot[]>,
+  date: Date,
+  taskId: number,
+  category: string | undefined,
+): Record<string, TaskSlot[]> {
+  const key = dateKey(date);
+  const tasks = store[key] ?? createEmptyTasks();
+
+  return {
+    ...store,
+    [key]: tasks.map((task) =>
+      task.id === taskId ? { ...task, category } : task,
+    ),
+  };
+}
+
+export function clearCategoryFromAllTasks(
+  store: Record<string, TaskSlot[]>,
+  category: string,
+): Record<string, TaskSlot[]> {
+  return Object.fromEntries(
+    Object.entries(store).map(([key, tasks]) => [
+      key,
+      tasks.map((task) =>
+        task.category === category ? { ...task, category: undefined } : task,
+      ),
+    ]),
+  );
+}
+
 export function getTasksForDate(
   store: Record<string, TaskSlot[]>,
   date: Date,
@@ -113,9 +143,11 @@ export function filterTasksByCategory(
   tasks: TaskSlot[],
   category: CategoryFilter,
 ): TaskSlot[] {
-  if (category === "전체") {
+  if (category === FILTER_ALL) {
     return tasks;
   }
 
-  return tasks.filter((task) => task.category === category);
+  return tasks.filter(
+    (task) => task.category === category && task.label.trim() !== "",
+  );
 }
