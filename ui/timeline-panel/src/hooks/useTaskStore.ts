@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  createInitialTaskStore,
   ensureTasksForDate,
   getTasksForDate,
   loadTaskStore,
@@ -9,11 +10,31 @@ import {
 } from "../models/taskStore";
 
 export function useTaskStore(selectedDate: Date) {
-  const [taskStore, setTaskStore] = useState(loadTaskStore);
+  const [taskStore, setTaskStore] = useState(createInitialTaskStore);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    saveTaskStore(taskStore);
-  }, [taskStore]);
+    let cancelled = false;
+
+    loadTaskStore().then((store) => {
+      if (!cancelled) {
+        setTaskStore(store);
+        setIsHydrated(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    void saveTaskStore(taskStore);
+  }, [taskStore, isHydrated]);
 
   const tasks = getTasksForDate(taskStore, selectedDate);
 
@@ -38,6 +59,7 @@ export function useTaskStore(selectedDate: Date) {
   return {
     taskStore,
     tasks,
+    isHydrated,
     ensureDate,
     handleToggle,
     handleLabelChange,

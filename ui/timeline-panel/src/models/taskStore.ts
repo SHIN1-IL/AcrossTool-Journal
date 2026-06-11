@@ -1,6 +1,11 @@
+import {
+  loadPersistedTaskStore,
+  savePersistedTaskStore,
+  STORAGE_KEY,
+} from "../storage/taskStorage";
 import { MAX_TASK_SLOTS, type TaskSlot } from "../types";
 
-export const STORAGE_KEY = "acrosstool-journal-tasks";
+export { STORAGE_KEY };
 
 export const DEFAULT_CATEGORIES = ["전체", "운동", "학습", "업무", "루틴"] as const;
 
@@ -35,34 +40,23 @@ export function createInitialTaskStore(): Record<string, TaskSlot[]> {
   };
 }
 
-export function loadTaskStore(): Record<string, TaskSlot[]> {
+export async function loadTaskStore(): Promise<Record<string, TaskSlot[]>> {
   if (typeof window === "undefined") {
     return createInitialTaskStore();
   }
 
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return createInitialTaskStore();
-    }
-
-    const parsed = JSON.parse(raw) as Record<string, TaskSlot[]>;
-    if (typeof parsed !== "object" || parsed === null) {
-      return createInitialTaskStore();
-    }
-
-    return parsed;
-  } catch {
-    return createInitialTaskStore();
-  }
+  const persisted = await loadPersistedTaskStore();
+  return persisted ?? createInitialTaskStore();
 }
 
-export function saveTaskStore(store: Record<string, TaskSlot[]>): void {
+export async function saveTaskStore(
+  store: Record<string, TaskSlot[]>,
+): Promise<void> {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  await savePersistedTaskStore(store);
 }
 
 export function ensureTasksForDate(

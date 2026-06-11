@@ -1,18 +1,22 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { clearTaskStoreFromIndexedDB } from "../storage/taskStorage";
 import {
   createEmptyTasks,
+  createInitialTaskStore,
   dateKey,
   ensureTasksForDate,
   filterTasksByCategory,
   getTasksForDate,
-  STORAGE_KEY,
+  loadTaskStore,
+  saveTaskStore,
   toggleTask,
   updateTaskLabel,
 } from "./taskStore";
 
 describe("taskStore", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
+    await clearTaskStoreFromIndexedDB();
   });
 
   it("creates exactly 5 empty task slots", () => {
@@ -64,7 +68,12 @@ describe("taskStore", () => {
     expect(filterTasksByCategory(tasks, "학습")[0]?.label).toBe("공부");
   });
 
-  it("persists task store to localStorage", () => {
+  it("loads initial store when IndexedDB is empty", async () => {
+    const store = await loadTaskStore();
+    expect(store).toEqual(createInitialTaskStore());
+  });
+
+  it("persists task store to IndexedDB", async () => {
     const date = new Date(2026, 0, 15);
     const store = updateTaskLabel(
       ensureTasksForDate({}, date),
@@ -73,9 +82,9 @@ describe("taskStore", () => {
       "저장 테스트",
     );
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    await saveTaskStore(store);
+    const loaded = await loadTaskStore();
 
-    expect(getTasksForDate(JSON.parse(localStorage.getItem(STORAGE_KEY)!), date)[0]
-      ?.label).toBe("저장 테스트");
+    expect(getTasksForDate(loaded, date)[0]?.label).toBe("저장 테스트");
   });
 });
