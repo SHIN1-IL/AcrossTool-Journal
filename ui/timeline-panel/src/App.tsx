@@ -4,6 +4,7 @@ import { CategoryFilterMenu } from "./components/CategoryFilterMenu";
 import { MobileBottomSheet } from "./components/MobileBottomSheet";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { useTaskStore } from "./hooks/useTaskStore";
+import { buildCompletionRateMap } from "./models/completionRate";
 import {
   filterTasksByCategory,
   type CategoryFilter,
@@ -49,8 +50,13 @@ export default function App() {
     () => window.matchMedia(WIDE_LAYOUT_QUERY).matches,
   );
 
-  const { tasks, ensureDate, handleToggle, handleLabelChange } =
+  const { taskStore, tasks, ensureDate, handleToggle, handleLabelChange } =
     useTaskStore(selectedDate);
+
+  const completionRates = useMemo(
+    () => buildCompletionRateMap(taskStore, selectedCategory),
+    [taskStore, selectedCategory],
+  );
 
   const filteredTasks = useMemo(
     () => filterTasksByCategory(tasks, selectedCategory),
@@ -110,6 +116,7 @@ export default function App() {
             <div className="min-w-0 flex-[6]">
               <Calendar
                 selectedDate={selectedDate}
+                completionRates={completionRates}
                 onSelectDate={handleSelectDate}
               />
             </div>
@@ -131,6 +138,7 @@ export default function App() {
           <div className="min-h-0 flex-1">
             <Calendar
               selectedDate={selectedDate}
+              completionRates={completionRates}
               onSelectDate={handleSelectDate}
             />
           </div>
