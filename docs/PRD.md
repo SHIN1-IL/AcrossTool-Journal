@@ -196,7 +196,7 @@
 | 카테고리 필터 UI·로직 | ✅ 완료 | 사용자 정의 카테고리 추가/삭제, 필터 상태 IndexedDB 영속화, 동적 줄 수 필터링 |
 | 달력 완료율 마커 | ✅ 완료 | `completionRate.ts`, `CompletionMarker.tsx` — 0%/low/medium/high 티어, ARIA 라벨 |
 | CI (자동 검증) | ✅ 완료 | `.github/workflows/ci.yml` — `npm ci` → lint → test → build |
-| Flutter 네이티브 앱 | ❌ 미착수 | `AcrossToolMainScreen` — 단계 E 예정 |
+| Flutter 네이티브 앱 | ✅ 스켈레톤 | `flutter/lib/screens/acrosstool_main_screen.dart` — 반응형 분기·Bottom Sheet |
 
 ### 6.2 로드맵 진행 현황
 | 단계 | 내용 | 상태 |
@@ -209,7 +209,7 @@
 | 6 | 달력 완료율/마커 표시 | ✅ 완료 |
 | 7 | 데이터 영속화 고도화 (IndexedDB 등) | ✅ 완료 |
 | 8 | 카테고리·필터 정책 확정 및 고도화 | ✅ 완료 |
-| 9 | Flutter `AcrossToolMainScreen` 마이그레이션 | 📋 예정 (웹 기능 안정화 후) |
+| 9 | Flutter `AcrossToolMainScreen` 마이그레이션 | 🔄 진행 중 (스켈레톤 완료, Hive·달력·마커 연동 예정) |
 
 ---
 

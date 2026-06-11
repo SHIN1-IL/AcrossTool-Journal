@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://acrosstool.journal/schemas/journal-data.schema.json",
+  "title": "AcrossTool Journal Data",
+  "description": "Shared data contract between web MVP (IndexedDB) and Flutter app (local DB).",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for forward-compatible migrations."
+    },
+    "taskStore": {
+      "type": "object",
+      "description": "Date-keyed task slots. Keys are YYYY-MM-DD.",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 5,
+        "maxItems": 5,
+        "items": { "$ref": "#/$defs/taskSlot" }
+      }
+    },
+    "userCategories": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 20 },
+      "description": "User-defined categories excluding built-in defaults."
+    },
+    "selectedFilter": {
+      "type": "string",
+      "default": "전체",
+      "description": "Active category filter. Use '전체' for no filter."
+    }
+  },
+  "required": ["version", "taskStore", "userCategories", "selectedFilter"],
+  "$defs": {
+    "taskSlot": {
+      "type": "object",
+      "required": ["id", "label", "completed"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "label": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "category": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "builtinCategories": {
+      "type": "array",
+      "const": ["운동", "학습", "업무", "루틴"]
+    }
+  }
+}

@@ -4,3 +4,9 @@ dist/
 *.log
 .env
 .env.*
+
+# Flutter
+flutter/.dart_tool/
+flutter/build/
+flutter/.flutter-plugins-dependencies
+flutter/.packages
