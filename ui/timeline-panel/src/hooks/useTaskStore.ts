@@ -36,6 +36,7 @@ export function useTaskStore(selectedDate: Date) {
   );
 
   return {
+    taskStore,
     tasks,
     ensureDate,
     handleToggle,
