@@ -179,38 +179,50 @@
 
 ## 6. 구현 상태 및 로드맵
 
-### 6.1 현재 구현 (스켈레톤)
-| 기능 | 상태 |
-|------|------|
-| AppBar + 필터 버튼 UI | ✅ UI만 (로직 placeholder) |
-| 600px 반응형 분기 | ✅ |
-| PC 2분할 레이아웃 | ✅ placeholder 텍스트 |
-| 모바일 달력 + Bottom Sheet | ✅ placeholder 텍스트 |
-| `_selectedDay` 상태 | ✅ 초기화만 |
-| 실제 달력 위젯 | ❌ 미구현 |
-| 5줄 타임라인·체크박스 | ❌ 미구현 |
-| 카테고리 필터 로직 | ❌ 미구현 |
-| 데이터 영속화 (로컬 DB 등) | ❌ 미정 |
+> **플랫폼 노트:** PRD 최종 목표는 Flutter(`AcrossToolMainScreen`)입니다. 현재 `main` 브랜치는 동일 UX 요구사항을 **웹 MVP**(`ui/timeline-panel`, React + TypeScript + Vite)로 구현 중이며, GitHub Actions CI(`lint` / `test` / `build`)가 `main` push·PR에 연동되어 있습니다.
 
-### 6.2 권장 구현 순서
-1. 일과 5줄 데이터 모델 및 로컬 저장
-2. 달력 위젯 연동 (`_selectedDay` ↔ 날짜 셀)
-3. PC 우측 타임라인 패널 (5줄 + 체크박스)
-4. 모바일 Bottom Sheet 동일 데이터 바인딩
-5. 카테고리 필터 UI 및 필터링 로직
-6. 달력에 일과 완료율/마커 표시 (선택)
+### 6.1 현재 구현 (웹 MVP — `main` 기준)
+| 기능 | 상태 | 구현 위치 / 비고 |
+|------|------|------------------|
+| AppBar + 필터 버튼 | ✅ 완료 | `App.tsx` — 타이틀, `filter_list_alt` 아이콘, `CategoryFilterMenu` |
+| 600px 반응형 분기 | ✅ 완료 | `App.tsx` — `matchMedia('(min-width: 600px)')` |
+| PC 2분할 레이아웃 (60/40) | ✅ 완료 | `App.tsx` — 달력(`flex: 6`) + 타임라인(`flex: 4`) |
+| 모바일 달력 + Bottom Sheet | ✅ 완료 | `Calendar.tsx`, `MobileBottomSheet.tsx` — 높이 300px, radius 20 |
+| 날짜 선택 상태 (`selectedDate`) | ✅ 완료 | `App.tsx` — 진입 시 오늘 날짜, 선택 시 타임라인·팝업 갱신 |
+| 달력 위젯 | ✅ 완료 | `Calendar.tsx` — 월별 그리드, 이전/다음 달, 오늘·선택일 하이라이트 |
+| 5줄 타임라인·체크박스 | ✅ 완료 | `TimelinePanel.tsx` — 인라인 체크·텍스트 편집 |
+| 일과 데이터 모델 (5슬롯) | ✅ 완료 | `types.ts`, `models/taskStore.ts` |
+| 데이터 영속화 | ✅ 부분 | `localStorage` 자동 저장/복원 (`useTaskStore`) — IndexedDB 전환 예정 |
+| 카테고리 필터 UI·로직 | ✅ 부분 | 고정 목록(전체/운동/학습/업무/루틴), 타임라인·달력 마커에 적용 — 사용자 정의·재시작 유지 정책 TBD |
+| 달력 완료율 마커 | ✅ 완료 | `completionRate.ts`, `CompletionMarker.tsx` — 0%/low/medium/high 티어, ARIA 라벨 |
+| CI (자동 검증) | ✅ 완료 | `.github/workflows/ci.yml` — `npm ci` → lint → test → build |
+| Flutter 네이티브 앱 | ❌ 미착수 | `AcrossToolMainScreen` — 단계 E 예정 |
+
+### 6.2 로드맵 진행 현황
+| 단계 | 내용 | 상태 |
+|------|------|------|
+| 1 | 일과 5줄 데이터 모델 및 로컬 저장 | ✅ 완료 (`taskStore`, `localStorage`) |
+| 2 | 달력 위젯 연동 (날짜 선택 ↔ 셀) | ✅ 완료 (`Calendar.tsx`) |
+| 3 | PC 우측 타임라인 패널 (5줄 + 체크박스) | ✅ 완료 (`TimelinePanel.tsx`) |
+| 4 | 모바일 Bottom Sheet 동일 데이터 바인딩 | ✅ 완료 (`MobileBottomSheet.tsx`) |
+| 5 | 카테고리 필터 UI 및 필터링 로직 | ✅ 부분 (고정 카테고리, 필터+빈 슬롯 정책 미확정) |
+| 6 | 달력 완료율/마커 표시 | ✅ 완료 |
+| 7 | 데이터 영속화 고도화 (IndexedDB 등) | 🔜 다음 (`localStorage` → IndexedDB) |
+| 8 | 카테고리·필터 정책 확정 및 고도화 | 🔜 다음 (사용자 정의 카테고리 등) |
+| 9 | Flutter `AcrossToolMainScreen` 마이그레이션 | 📋 예정 (웹 기능 안정화 후) |
 
 ---
 
 ## 7. 미결정 사항 (TBD)
 
-| 항목 | 설명 |
-|------|------|
-| 카테고리 정의 | 사용자 정의 vs 고정 목록 |
-| 5줄 고정 여부 | 항상 5줄 vs 가변 슬롯 |
-| 필터 + 빈 슬롯 | 필터 시 5줄 유지 vs 동적 줄 수 |
-| 데이터 동기화 | 단일 기기 vs 클라우드 백업 |
-| 타임라인 줄 의미 | 시간대별 vs 우선순위별 vs 자유 텍스트 |
+| 항목 | 설명 | 현재 임시 정책 (웹 MVP) |
+|------|------|-------------------------|
+| 카테고리 정의 | 사용자 정의 vs 고정 목록 | 고정 4종 + 「전체」 (`DEFAULT_CATEGORIES`) |
+| 5줄 고정 여부 | 항상 5줄 vs 가변 슬롯 | 항상 5슬롯 (`MAX_TASK_SLOTS = 5`) |
+| 필터 + 빈 슬롯 | 필터 시 5줄 유지 vs 동적 줄 수 | 필터 시 매칭 항목 + 빈 슬롯으로 5줄 패딩 |
+| 데이터 동기화 | 단일 기기 vs 클라우드 백업 | `localStorage` 단일 기기 (IndexedDB 전환 예정) |
+| 타임라인 줄 의미 | 시간대별 vs 우선순위별 vs 자유 텍스트 | 자유 텍스트 라벨 |
+| 필터 상태 유지 | 세션 내 / 앱 재시작 시 | 세션 내 유지, 재시작 시 「전체」로 초기화 |
 
 ---
 
@@ -224,6 +236,18 @@
 ---
 
 ## 9. 참고 구현
+
+### 9.1 웹 MVP (현재 `main`)
+
+메인 화면 진입점: `ui/timeline-panel/src/App.tsx`
+
+- 상태: `selectedDate: Date`, `taskStore` (`useTaskStore`)
+- 반응형: `matchMedia('(min-width: 600px)')` — PC 2분할 / 모바일 달력+팝업
+- PC: `flex-[6]` 달력 + 구분선 + `flex-[4]` `TimelinePanel`
+- 모바일: `MobileBottomSheet` — `height: 300`, `borderRadius: 20`
+- 완료율: `buildCompletionRateMap()` → `Calendar` + `CompletionMarker`
+
+### 9.2 Flutter 목표 (PRD 원본)
 
 메인 화면 진입점: `AcrossToolMainScreen` (`StatefulWidget`)
 
