@@ -8,7 +8,7 @@
 |------|-----------------|----------------------|
 | 메인 화면 | `App.tsx` | `AcrossToolMainScreen` (스켈레톤) |
 | 반응형 분기 | `matchMedia(600px)` | `LayoutBuilder` (600px) |
-| 일과 저장 | IndexedDB (`idb-keyval`) | 미구현 (Hive 권장) |
+| 일과 저장 | IndexedDB (`idb-keyval`) | Hive `TaskRepository` (CRUD 완료) |
 | 카테고리 | 사용자 정의 + 기본 4종 | 미구현 |
 | 완료율 마커 | `completionRate.ts` | 미구현 |
 | CI | GitHub Actions (npm) | 미포함 (SDK 필요) |
@@ -106,7 +106,7 @@ flutter/
 ## 6. 구현 우선순위 (Flutter)
 
 1. `AcrossToolMainScreen` 반응형 레이아웃 (600px) — **스켈레톤 완료**
-2. Hive 기반 `TaskRepository` + 5슬롯 CRUD
+2. Hive 기반 `TaskRepository` + 5슬롯 CRUD — **완료**
 3. `table_calendar` + 날짜 선택 연동
 4. `TimelinePanel` 체크박스·텍스트 편집
 5. 모바일 `showModalBottomSheet`
