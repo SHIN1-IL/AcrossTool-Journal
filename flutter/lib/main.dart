@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 
+import 'repositories/task_repository.dart';
 import 'screens/acrosstool_main_screen.dart';
 
-void main() {
-  runApp(const AcrossToolJournalApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final taskRepository = await TaskRepository.create();
+  runApp(AcrossToolJournalApp(taskRepository: taskRepository));
 }
 
 class AcrossToolJournalApp extends StatelessWidget {
-  const AcrossToolJournalApp({super.key});
+  const AcrossToolJournalApp({
+    super.key,
+    required this.taskRepository,
+  });
+
+  final TaskRepository taskRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +25,7 @@ class AcrossToolJournalApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const AcrossToolMainScreen(),
+      home: AcrossToolMainScreen(taskRepository: taskRepository),
     );
   }
 }

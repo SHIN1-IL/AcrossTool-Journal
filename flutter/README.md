@@ -26,8 +26,9 @@ flutter devices
 ## 현재 구현
 
 - `AcrossToolMainScreen` — 600px `LayoutBuilder` 반응형 분기
-- PC: 60/40 2분할 (달력 placeholder + 타임라인 placeholder)
+- PC: 60/40 2분할 (달력 placeholder + 타임라인 패널)
 - 모바일: 달력 placeholder + `showModalBottomSheet` (height 300, radius 20)
+- `TaskRepository` — Hive 기반 5슬롯 CRUD (체크·라벨 편집, 날짜별 저장)
 
 ## 마이그레이션 참고
 
