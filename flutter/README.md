@@ -5,15 +5,22 @@ PRD 목표 플랫폼용 Flutter 앱 스켈레톤입니다. 웹 MVP(`ui/timeline-
 ## 사전 요구사항
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.5+
+- **권장 실행 환경:** Chrome (`flutter doctor`에서 Chrome ✓)
+- iOS/Android 네이티브 실행은 Xcode·Android Studio 추가 설치 필요
 
 ## 실행
 
 ```bash
 cd flutter
 flutter pub get
-flutter run
 flutter test
 flutter analyze
+
+# Chrome에서 스켈레톤 확인 (가장 간단)
+flutter run -d chrome
+
+# 연결된 기기 목록 확인
+flutter devices
 ```
 
 ## 현재 구현

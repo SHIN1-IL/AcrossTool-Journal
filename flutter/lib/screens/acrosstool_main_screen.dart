@@ -12,7 +12,7 @@ class AcrossToolMainScreen extends StatefulWidget {
 
 class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
   DateTime _selectedDay = DateTime.now();
-  List<TaskSlot> _tasks = TaskSlot.emptySlots();
+  final List<TaskSlot> _tasks = TaskSlot.emptySlots();
 
   static const double _wideBreakpoint = 600;
 
