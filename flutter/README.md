@@ -33,6 +33,7 @@ flutter devices
 - `TaskRepository` — Hive 기반 5슬롯 CRUD (체크·라벨 편집, 날짜별 저장)
 - `PreferencesRepository` + `CategoryFilterMenu` — 카테고리 필터·사용자 정의 카테고리
 - `CategorySelect` — 타임라인 행별 카테고리 지정
+- `JournalDataService` — 웹↔Flutter 공유 JSON 스키마 import/export
 
 ## 마이그레이션 참고
 

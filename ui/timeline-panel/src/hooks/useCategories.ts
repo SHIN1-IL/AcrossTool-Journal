@@ -83,6 +83,16 @@ export function useCategories() {
     setSelectedCategory((prev) => (prev === name ? FILTER_ALL : prev));
   }, []);
 
+  const importPreferences = useCallback(
+    (categories: string[], filter: CategoryFilter) => {
+      const options = buildFilterOptions(categories);
+      setUserCategories(categories);
+      setSelectedCategory(sanitizeSelectedFilter(filter, options));
+      setIsHydrated(true);
+    },
+    [],
+  );
+
   return {
     userCategories,
     selectedCategory,
@@ -92,5 +102,6 @@ export function useCategories() {
     setSelectedCategory: handleSelectCategory,
     addCategory: handleAddCategory,
     removeCategory: handleRemoveCategory,
+    importPreferences,
   };
 }

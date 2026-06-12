@@ -62,7 +62,7 @@
 
 ### 3.3 마이그레이션 전략
 
-1. **웹 → Flutter:** JSON export/import UI (추후) 또는 동일 스키마로 수동 복사
+1. **웹 → Flutter:** JSON export/import UI (`DataTransferDialog` / `JournalDataDialog`) — **완료**
 2. **Flutter 내부:** `version` 필드 기반 `MigrationService` — 스키마 변경 시 box 마이그레이션
 3. **레거시:** 웹 `localStorage` → IndexedDB 마이그레이션 로직은 이미 구현됨 (`taskStorage.ts`)
 
@@ -112,7 +112,7 @@ flutter/
 5. 모바일 `showModalBottomSheet`
 6. 카테고리 필터 + 사용자 정의 카테고리 — **완료**
 7. 완료율 마커 (0/zero, low, medium, high 티어) — **완료**
-8. 웹↔Flutter 데이터 import/export
+8. 웹↔Flutter 데이터 import/export — **완료**
 
 ## 7. 환경 요구사항
 
