@@ -13,10 +13,10 @@ void main() {
 
   testWidgets('Wide layout shows calendar and timeline panels', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         home: MediaQuery(
-          data: const MediaQueryData(size: Size(900, 600)),
-          child: const AcrossToolMainScreen(),
+          data: MediaQueryData(size: Size(900, 600)),
+          child: AcrossToolMainScreen(),
         ),
       ),
     );
