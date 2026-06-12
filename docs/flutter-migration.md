@@ -6,12 +6,12 @@
 
 | 항목 | 웹 MVP (`main`) | Flutter (`flutter/`) |
 |------|-----------------|----------------------|
-| 메인 화면 | `App.tsx` | `AcrossToolMainScreen` (스켈레톤) |
+| 메인 화면 | `App.tsx` | `AcrossToolMainScreen` (기능 패리티 완료) |
 | 반응형 분기 | `matchMedia(600px)` | `LayoutBuilder` (600px) |
 | 일과 저장 | IndexedDB (`idb-keyval`) | Hive `TaskRepository` (CRUD 완료) |
 | 카테고리 | 사용자 정의 + 기본 4종 | `PreferencesRepository` + 필터 메뉴 |
 | 완료율 마커 | `completion_rate.dart` + `CompletionMarker` | 완료 |
-| CI | GitHub Actions (npm) | 미포함 (SDK 필요) |
+| CI | GitHub Actions (npm) | GitHub Actions (`flutter analyze`, `flutter test`) |
 
 ## 2. 기능 매핑표
 
@@ -125,7 +125,7 @@ flutter test
 flutter analyze
 ```
 
-> 현재 CI 워크플로는 `ui/timeline-panel`만 대상입니다. Flutter CI 추가 시 별도 job(`flutter analyze`, `flutter test`)이 필요하며, runner에 Flutter SDK 설치 단계가 포함되어야 합니다.
+> CI 워크플로(`.github/workflows/ci.yml`)는 웹(`build-test`)과 Flutter(`flutter-test`)를 병렬 job으로 실행합니다.
 
 ## 8. 리스크 및 완화
 
