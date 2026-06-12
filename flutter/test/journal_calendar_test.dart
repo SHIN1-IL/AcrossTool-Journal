@@ -1,3 +1,5 @@
+import 'package:acrosstool_journal/models/completion_rate.dart';
+import 'package:acrosstool_journal/widgets/completion_marker.dart';
 import 'package:acrosstool_journal/widgets/journal_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -12,6 +14,7 @@ void main() {
 
   Widget buildTestApp({
     required DateTime selectedDay,
+    CompletionRateMap completionRates = const {},
     required ValueChanged<DateTime> onDaySelected,
   }) {
     return MaterialApp(
@@ -25,6 +28,7 @@ void main() {
       home: Scaffold(
         body: JournalCalendar(
           selectedDay: selectedDay,
+          completionRates: completionRates,
           onDaySelected: onDaySelected,
         ),
       ),
@@ -45,6 +49,23 @@ void main() {
     expect(find.byType(TableCalendar<void>), findsOneWidget);
     expect(find.text('일'), findsOneWidget);
     expect(find.text('월'), findsOneWidget);
+  });
+
+  testWidgets('JournalCalendar shows completion marker for dated entry',
+      (tester) async {
+    await tester.pumpWidget(
+      buildTestApp(
+        selectedDay: DateTime(2026, 6, 11),
+        completionRates: {
+          '2026-06-11': const CompletionDayEntry(rate: 50),
+        },
+        onDaySelected: (_) {},
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(CompletionMarker), findsWidgets);
   });
 
   testWidgets('JournalCalendar calls onDaySelected when another day is tapped',

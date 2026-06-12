@@ -2,15 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-/// 웹 MVP `Calendar.tsx` 대응. 완료율 마커는 추후 `completion_marker.dart`에서 추가합니다.
+import '../models/completion_rate.dart';
+import 'completion_marker.dart';
+
+/// 웹 MVP `Calendar.tsx` 대응.
 class JournalCalendar extends StatefulWidget {
   const JournalCalendar({
     super.key,
     required this.selectedDay,
+    required this.completionRates,
     required this.onDaySelected,
   });
 
   final DateTime selectedDay;
+  final CompletionRateMap completionRates;
   final ValueChanged<DateTime> onDaySelected;
 
   @override
@@ -46,10 +51,66 @@ class _JournalCalendarState extends State<JournalCalendar> {
     setState(() => _focusedDay = _dateOnly(focusedDay));
   }
 
+  Widget _buildDayCell(
+    BuildContext context,
+    DateTime day, {
+    required bool isSelected,
+    required bool isToday,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final entry = getCompletionEntryForDate(widget.completionRates, day);
+
+    BoxDecoration? decoration;
+    late final TextStyle textStyle;
+
+    if (isSelected) {
+      decoration = BoxDecoration(
+        color: colorScheme.primary,
+        shape: BoxShape.circle,
+      );
+      textStyle = const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+      );
+    } else if (isToday) {
+      decoration = BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.35),
+        ),
+      );
+      textStyle = TextStyle(
+        color: colorScheme.primary,
+        fontWeight: FontWeight.w600,
+      );
+    } else {
+      textStyle = TextStyle(color: Colors.grey.shade800);
+    }
+
+    return Semantics(
+      label: buildCalendarDateAriaLabel(day, entry),
+      selected: isSelected,
+      button: true,
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        decoration: decoration,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('${day.day}', style: textStyle),
+            if (entry != null) ...[
+              const SizedBox(height: 2),
+              CompletionMarker(rate: entry.rate, selected: isSelected),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return ColoredBox(
       color: Colors.white,
       child: Padding(
@@ -86,27 +147,35 @@ class _JournalCalendarState extends State<JournalCalendar> {
               color: Colors.grey.shade600,
             ),
           ),
-          calendarStyle: CalendarStyle(
+          calendarStyle: const CalendarStyle(
             outsideDaysVisible: false,
-            cellMargin: const EdgeInsets.all(4),
-            defaultTextStyle: TextStyle(color: Colors.grey.shade800),
-            weekendTextStyle: TextStyle(color: Colors.grey.shade800),
-            selectedDecoration: BoxDecoration(
-              color: colorScheme.primary,
-              shape: BoxShape.circle,
-            ),
-            selectedTextStyle: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-            todayDecoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: colorScheme.primary.withValues(alpha: 0.35)),
-            ),
-            todayTextStyle: TextStyle(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
+            cellMargin: EdgeInsets.zero,
+          ),
+          calendarBuilders: CalendarBuilders(
+            defaultBuilder: (context, day, focusedDay) {
+              return _buildDayCell(
+                context,
+                day,
+                isSelected: isSameDay(widget.selectedDay, day),
+                isToday: isSameDay(DateTime.now(), day),
+              );
+            },
+            todayBuilder: (context, day, focusedDay) {
+              return _buildDayCell(
+                context,
+                day,
+                isSelected: isSameDay(widget.selectedDay, day),
+                isToday: true,
+              );
+            },
+            selectedBuilder: (context, day, focusedDay) {
+              return _buildDayCell(
+                context,
+                day,
+                isSelected: true,
+                isToday: isSameDay(DateTime.now(), day),
+              );
+            },
           ),
         ),
       ),

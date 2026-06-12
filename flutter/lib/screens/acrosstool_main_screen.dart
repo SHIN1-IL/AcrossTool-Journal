@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/category_store.dart';
+import '../models/completion_rate.dart';
 import '../models/task_slot.dart';
 import '../repositories/preferences_repository.dart';
 import '../repositories/task_repository.dart';
@@ -44,6 +45,11 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
 
   String? get _filterLabel =>
       _selectedFilter == CategoryStore.filterAll ? null : _selectedFilter;
+
+  CompletionRateMap get _completionRates => buildCompletionRateMap(
+        widget.taskRepository.loadStore(),
+        _selectedFilter,
+      );
 
   @override
   void initState() {
@@ -257,6 +263,7 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
                   flex: 6,
                   child: JournalCalendar(
                     selectedDay: _selectedDay,
+                    completionRates: _completionRates,
                     onDaySelected: _onDaySelected,
                   ),
                 ),
@@ -283,6 +290,7 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
 
           return JournalCalendar(
             selectedDay: _selectedDay,
+            completionRates: _completionRates,
             onDaySelected: _onDaySelected,
           );
         },
