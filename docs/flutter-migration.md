@@ -9,7 +9,7 @@
 | 메인 화면 | `App.tsx` | `AcrossToolMainScreen` (스켈레톤) |
 | 반응형 분기 | `matchMedia(600px)` | `LayoutBuilder` (600px) |
 | 일과 저장 | IndexedDB (`idb-keyval`) | Hive `TaskRepository` (CRUD 완료) |
-| 카테고리 | 사용자 정의 + 기본 4종 | 미구현 |
+| 카테고리 | 사용자 정의 + 기본 4종 | `PreferencesRepository` + 필터 메뉴 |
 | 완료율 마커 | `completionRate.ts` | 미구현 |
 | CI | GitHub Actions (npm) | 미포함 (SDK 필요) |
 
@@ -110,7 +110,7 @@ flutter/
 3. `table_calendar` + 날짜 선택 연동 — **완료**
 4. `TimelinePanel` 체크박스·텍스트 편집
 5. 모바일 `showModalBottomSheet`
-6. 카테고리 필터 + 사용자 정의 카테고리
+6. 카테고리 필터 + 사용자 정의 카테고리 — **완료**
 7. 완료율 마커 (0/zero, low, medium, high 티어)
 8. 웹↔Flutter 데이터 import/export
 

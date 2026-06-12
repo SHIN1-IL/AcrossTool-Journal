@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:acrosstool_journal/repositories/preferences_repository.dart';
 import 'package:acrosstool_journal/repositories/task_repository.dart';
 import 'package:acrosstool_journal/screens/acrosstool_main_screen.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,8 @@ import 'package:table_calendar/table_calendar.dart';
 
 void main() {
   late Directory tempDir;
-  late TaskRepository repository;
+  late TaskRepository taskRepository;
+  late PreferencesRepository preferencesRepository;
 
   setUpAll(() async {
     await initializeDateFormatting('ko_KR');
@@ -19,7 +21,8 @@ void main() {
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('hive_widget_test');
-    repository = await TaskRepository.createForTest(tempDir.path);
+    taskRepository = await TaskRepository.createForTest(tempDir.path);
+    preferencesRepository = await PreferencesRepository.open();
   });
 
   tearDown(() async {
@@ -42,10 +45,15 @@ void main() {
     );
   }
 
-  testWidgets('AcrossToolMainScreen renders app bar title', (tester) async {
-    await tester.pumpWidget(
-      buildApp(AcrossToolMainScreen(taskRepository: repository)),
+  AcrossToolMainScreen buildScreen() {
+    return AcrossToolMainScreen(
+      taskRepository: taskRepository,
+      preferencesRepository: preferencesRepository,
     );
+  }
+
+  testWidgets('AcrossToolMainScreen renders app bar title', (tester) async {
+    await tester.pumpWidget(buildApp(buildScreen()));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -58,7 +66,7 @@ void main() {
       buildApp(
         MediaQuery(
           data: const MediaQueryData(size: Size(900, 600)),
-          child: AcrossToolMainScreen(taskRepository: repository),
+          child: buildScreen(),
         ),
       ),
     );
@@ -71,4 +79,24 @@ void main() {
     expect(find.text('아침 스트레칭'), findsOneWidget);
   });
 
+  testWidgets('Filter button opens category filter menu', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        MediaQuery(
+          data: const MediaQueryData(size: Size(900, 600)),
+          child: buildScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byIcon(Icons.filter_list_alt));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('카테고리 추가'), findsOneWidget);
+    expect(find.text('전체'), findsWidgets);
+    expect(find.text('운동'), findsWidgets);
+  });
 }
