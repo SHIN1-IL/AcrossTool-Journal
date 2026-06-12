@@ -104,6 +104,23 @@ class TaskRepository {
     return updated[key]!;
   }
 
+  Future<void> clearCategoryFromAllTasks(String category) async {
+    final store = loadStore();
+    final updated = store.map(
+      (key, tasks) => MapEntry(
+        key,
+        tasks
+            .map(
+              (task) => task.category == category
+                  ? task.copyWith(clearCategory: true)
+                  : task,
+            )
+            .toList(),
+      ),
+    );
+    await saveStore(updated);
+  }
+
   Future<List<TaskSlot>> updateTaskCategory(
     DateTime date,
     int taskId,

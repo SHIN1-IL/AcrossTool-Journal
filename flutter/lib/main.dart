@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'repositories/preferences_repository.dart';
 import 'repositories/task_repository.dart';
 import 'screens/acrosstool_main_screen.dart';
 
@@ -9,16 +10,24 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ko_KR');
   final taskRepository = await TaskRepository.create();
-  runApp(AcrossToolJournalApp(taskRepository: taskRepository));
+  final preferencesRepository = await PreferencesRepository.create();
+  runApp(
+    AcrossToolJournalApp(
+      taskRepository: taskRepository,
+      preferencesRepository: preferencesRepository,
+    ),
+  );
 }
 
 class AcrossToolJournalApp extends StatelessWidget {
   const AcrossToolJournalApp({
     super.key,
     required this.taskRepository,
+    required this.preferencesRepository,
   });
 
   final TaskRepository taskRepository;
+  final PreferencesRepository preferencesRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +46,10 @@ class AcrossToolJournalApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: AcrossToolMainScreen(taskRepository: taskRepository),
+      home: AcrossToolMainScreen(
+        taskRepository: taskRepository,
+        preferencesRepository: preferencesRepository,
+      ),
     );
   }
 }

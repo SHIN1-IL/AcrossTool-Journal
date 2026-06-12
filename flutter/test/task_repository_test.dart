@@ -63,6 +63,17 @@ void main() {
     expect(repository.getTasksForDate(today)[1].label, '새 일과');
   });
 
+  test('clearCategoryFromAllTasks removes category from every date', () async {
+    final today = DateTime.now();
+    await repository.ensureTasksForDate(today);
+
+    await repository.clearCategoryFromAllTasks('운동');
+
+    final tasks = repository.getTasksForDate(today);
+    expect(tasks.where((task) => task.category == '운동'), isEmpty);
+    expect(tasks[0].category, isNull);
+  });
+
   test('updateTaskCategory saves category', () async {
     final today = DateTime.now();
     await repository.ensureTasksForDate(today);

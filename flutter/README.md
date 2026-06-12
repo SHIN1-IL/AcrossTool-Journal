@@ -30,6 +30,8 @@ flutter devices
 - 모바일: `JournalCalendar` + `showModalBottomSheet` (height 300, radius 20)
 - `JournalCalendar` — `table_calendar` 기반 월별 달력, 날짜 선택 → `TaskRepository` 연동
 - `TaskRepository` — Hive 기반 5슬롯 CRUD (체크·라벨 편집, 날짜별 저장)
+- `PreferencesRepository` + `CategoryFilterMenu` — 카테고리 필터·사용자 정의 카테고리
+- `CategorySelect` — 타임라인 행별 카테고리 지정
 
 ## 마이그레이션 참고
 
