@@ -179,7 +179,7 @@
 
 ## 6. 구현 상태 및 로드맵
 
-> **플랫폼 노트:** PRD 최종 목표는 Flutter(`AcrossToolMainScreen`)입니다. 현재 `main` 브랜치는 동일 UX 요구사항을 **웹 MVP**(`ui/timeline-panel`, React + TypeScript + Vite)로 구현 중이며, GitHub Actions CI(`lint` / `test` / `build`)가 `main` push·PR에 연동되어 있습니다.
+> **플랫폼 노트:** PRD 최종 목표인 Flutter(`AcrossToolMainScreen`)는 **기능 패리티 100%**를 달성했습니다. **웹 MVP**(`ui/timeline-panel`)와 **Flutter 앱**(`flutter/`)이 동일 UX·데이터 계약(`journal-data.schema.json` v1)을 공유하며, GitHub Actions CI가 웹(`lint` / `test` / `build`)과 Flutter(`analyze` / `test`)를 `main` push·PR에서 자동 검증합니다.
 
 ### 6.1 현재 구현 (웹 MVP — `main` 기준)
 | 기능 | 상태 | 구현 위치 / 비고 |
@@ -195,8 +195,8 @@
 | 데이터 영속화 | ✅ 완료 | IndexedDB (`idb-keyval`, `storage/taskStorage.ts`) — 기존 `localStorage` 자동 마이그레이션 |
 | 카테고리 필터 UI·로직 | ✅ 완료 | 사용자 정의 카테고리 추가/삭제, 필터 상태 IndexedDB 영속화, 동적 줄 수 필터링 |
 | 달력 완료율 마커 | ✅ 완료 | `completionRate.ts`, `CompletionMarker.tsx` — 0%/low/medium/high 티어, ARIA 라벨 |
-| CI (자동 검증) | ✅ 완료 | `.github/workflows/ci.yml` — `npm ci` → lint → test → build |
-| Flutter 네이티브 앱 | ✅ 스켈레톤 | `flutter/lib/screens/acrosstool_main_screen.dart` — 반응형 분기·Bottom Sheet |
+| CI (자동 검증) | ✅ 완료 | `.github/workflows/ci.yml` — 웹: lint → test → build / Flutter: analyze → test |
+| JSON import/export | ✅ 완료 | `journalData.ts`, `DataTransferDialog.tsx` — 웹↔Flutter 백업·복원 |
 
 ### 6.2 로드맵 진행 현황
 | 단계 | 내용 | 상태 |
@@ -209,7 +209,19 @@
 | 6 | 달력 완료율/마커 표시 | ✅ 완료 |
 | 7 | 데이터 영속화 고도화 (IndexedDB 등) | ✅ 완료 |
 | 8 | 카테고리·필터 정책 확정 및 고도화 | ✅ 완료 |
-| 9 | Flutter `AcrossToolMainScreen` 마이그레이션 | 🔄 진행 중 (스켈레톤 완료, Hive·달력·마커 연동 예정) |
+| 9 | Flutter `AcrossToolMainScreen` 마이그레이션 | ✅ 완료 (기능 패리티 100% 및 테스트 통과) |
+
+**Flutter 마이그레이션 세부 (단계 9)**
+
+| 항목 | 상태 | 구현 위치 / 비고 |
+|------|------|------------------|
+| 반응형 메인 화면 (600px) | ✅ 완료 | `acrosstool_main_screen.dart` — PC 60/40 · 모바일 Bottom Sheet |
+| Hive 일과 저장 (5슬롯 CRUD) | ✅ 완료 | `TaskRepository` |
+| 달력 + 날짜 선택 | ✅ 완료 | `JournalCalendar` (`table_calendar`) |
+| 카테고리 필터·사용자 정의 | ✅ 완료 | `PreferencesRepository`, `CategoryFilterMenu`, `CategorySelect` |
+| 완료율 마커 | ✅ 완료 | `completion_rate.dart`, `CompletionMarker` |
+| 웹↔Flutter 데이터 이동 | ✅ 완료 | `JournalDataService`, `JournalDataDialog` |
+| 자동 검증 | ✅ 완료 | CI `flutter analyze` + `flutter test` (37 tests) |
 
 ---
 
@@ -247,11 +259,13 @@
 - 모바일: `MobileBottomSheet` — `height: 300`, `borderRadius: 20`
 - 완료율: `buildCompletionRateMap()` → `Calendar` + `CompletionMarker`
 
-### 9.2 Flutter 목표 (PRD 원본)
+### 9.2 Flutter 앱 (현재 `main`)
 
-메인 화면 진입점: `AcrossToolMainScreen` (`StatefulWidget`)
+메인 화면 진입점: `flutter/lib/screens/acrosstool_main_screen.dart`
 
-- 상태: `_selectedDay: DateTime`
+- 상태: `_selectedDay`, `TaskRepository`, `PreferencesRepository`
 - 반응형: `LayoutBuilder` + `constraints.maxWidth >= 600`
-- PC: `Row` → `Expanded(flex: 6)` + `VerticalDivider` + `Expanded(flex: 4)`
+- PC: `JournalCalendar` + `_TimelineContent` (체크·라벨·카테고리 편집)
 - 모바일: `showModalBottomSheet` — `height: 300`, `borderRadius.vertical(top: 20)`
+- 완료율: `buildCompletionRateMap()` → `JournalCalendar` + `CompletionMarker`
+- 데이터 이동: AppBar `sync_alt` → `JournalDataDialog` (JSON import/export)
