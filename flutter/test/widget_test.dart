@@ -79,6 +79,26 @@ void main() {
     expect(find.text('아침 스트레칭'), findsOneWidget);
   });
 
+  testWidgets('Data transfer button opens import export dialog', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        MediaQuery(
+          data: const MediaQueryData(size: Size(900, 600)),
+          child: buildScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byIcon(Icons.sync_alt));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('데이터 가져오기 /보내기'), findsOneWidget);
+    expect(find.text('클립보드 복사'), findsOneWidget);
+  });
+
   testWidgets('Filter button opens category filter menu', (tester) async {
     await tester.pumpWidget(
       buildApp(

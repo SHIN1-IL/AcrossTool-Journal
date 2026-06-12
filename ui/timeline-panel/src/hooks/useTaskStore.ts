@@ -71,6 +71,11 @@ export function useTaskStore(selectedDate: Date) {
     setTaskStore((prev) => clearCategoryFromAllTasks(prev, category));
   }, []);
 
+  const importStore = useCallback((store: typeof taskStore) => {
+    setTaskStore(store);
+    setIsHydrated(true);
+  }, []);
+
   return {
     taskStore,
     tasks,
@@ -80,5 +85,6 @@ export function useTaskStore(selectedDate: Date) {
     handleLabelChange,
     handleCategoryChange,
     clearCategory,
+    importStore,
   };
 }

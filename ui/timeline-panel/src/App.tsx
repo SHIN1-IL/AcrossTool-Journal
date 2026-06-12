@@ -1,40 +1,60 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar } from "./components/Calendar";
 import { CategoryFilterMenu } from "./components/CategoryFilterMenu";
+import { DataTransferDialog } from "./components/DataTransferDialog";
 import { MobileBottomSheet } from "./components/MobileBottomSheet";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { useCategories } from "./hooks/useCategories";
 import { useTaskStore } from "./hooks/useTaskStore";
 import { FILTER_ALL } from "./models/categoryStore";
 import { buildCompletionRateMap } from "./models/completionRate";
+import { buildJournalData, type JournalData } from "./models/journalData";
 import { filterTasksByCategory } from "./models/taskStore";
 
 const WIDE_LAYOUT_QUERY = "(min-width: 600px)";
 
 function AppBar({
   onFilterClick,
+  onDataTransferClick,
 }: {
   onFilterClick: () => void;
+  onDataTransferClick: () => void;
 }) {
   return (
     <header className="flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
       <h1 className="text-base font-semibold text-gray-900 sm:text-lg">
         AcrossTool Journal
       </h1>
-      <button
-        type="button"
-        onClick={onFilterClick}
-        aria-label="카테고리 필터"
-        title="카테고리 필터"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        <span
-          className="material-symbols-outlined text-[22px]"
-          aria-hidden="true"
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={onDataTransferClick}
+          aria-label="데이터 가져오기 및보내기"
+          title="데이터 가져오기 /보내기"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          filter_list_alt
-        </span>
-      </button>
+          <span
+            className="material-symbols-outlined text-[22px]"
+            aria-hidden="true"
+          >
+            sync_alt
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={onFilterClick}
+          aria-label="카테고리 필터"
+          title="카테고리 필터"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <span
+            className="material-symbols-outlined text-[22px]"
+            aria-hidden="true"
+          >
+            filter_list_alt
+          </span>
+        </button>
+      </div>
     </header>
   );
 }
@@ -42,18 +62,21 @@ function AppBar({
 export default function App() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isDataTransferOpen, setIsDataTransferOpen] = useState(false);
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [isWideLayout, setIsWideLayout] = useState(
     () => window.matchMedia(WIDE_LAYOUT_QUERY).matches,
   );
 
   const {
+    userCategories,
     selectedCategory,
     filterOptions,
     assignableCategories,
     setSelectedCategory,
     addCategory,
     removeCategory,
+    importPreferences,
   } = useCategories();
 
   const {
@@ -64,6 +87,7 @@ export default function App() {
     handleLabelChange,
     handleCategoryChange,
     clearCategory,
+    importStore,
   } = useTaskStore(selectedDate);
 
   const completionRates = useMemo(
@@ -105,6 +129,17 @@ export default function App() {
     clearCategory(name);
   };
 
+  const exportData = buildJournalData(
+    taskStore,
+    userCategories,
+    selectedCategory,
+  );
+
+  const handleImportData = (data: JournalData) => {
+    importStore(data.taskStore);
+    importPreferences(data.userCategories, data.selectedFilter);
+  };
+
   return (
     <>
       <link
@@ -112,7 +147,10 @@ export default function App() {
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
       />
       <div className="flex h-dvh flex-col bg-white text-gray-900">
-        <AppBar onFilterClick={() => setIsFilterOpen(true)} />
+        <AppBar
+          onFilterClick={() => setIsFilterOpen(true)}
+          onDataTransferClick={() => setIsDataTransferOpen(true)}
+        />
 
         {isWideLayout ? (
           <div className="flex min-h-0 flex-1">
@@ -148,6 +186,14 @@ export default function App() {
               onSelectDate={handleSelectDate}
             />
           </div>
+        )}
+
+        {isDataTransferOpen && (
+          <DataTransferDialog
+            exportData={exportData}
+            onImport={handleImportData}
+            onClose={() => setIsDataTransferOpen(false)}
+          />
         )}
 
         {isFilterOpen && (

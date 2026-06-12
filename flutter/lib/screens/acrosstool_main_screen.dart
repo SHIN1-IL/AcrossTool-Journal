@@ -5,9 +5,11 @@ import '../models/completion_rate.dart';
 import '../models/task_slot.dart';
 import '../repositories/preferences_repository.dart';
 import '../repositories/task_repository.dart';
+import '../services/journal_data_service.dart';
 import '../widgets/category_filter_menu.dart';
 import '../widgets/category_select.dart';
 import '../widgets/journal_calendar.dart';
+import '../widgets/journal_data_dialog.dart';
 
 /// PRD 메인 화면 진입점. 600px 브레이크포인트로 PC/모바일 레이아웃을 분기합니다.
 class AcrossToolMainScreen extends StatefulWidget {
@@ -31,6 +33,7 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
   String _selectedFilter = CategoryStore.filterAll;
   bool _isLoading = true;
   int _loadGeneration = 0;
+  late final JournalDataService _journalDataService;
 
   static const double _wideBreakpoint = 600;
 
@@ -54,6 +57,10 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
   @override
   void initState() {
     super.initState();
+    _journalDataService = JournalDataService(
+      taskRepository: widget.taskRepository,
+      preferencesRepository: widget.preferencesRepository,
+    );
     _loadPreferences();
     _loadTasksForSelectedDay();
   }
@@ -182,6 +189,22 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
     await _loadTasksForSelectedDay();
   }
 
+  void _showDataTransferDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return JournalDataDialog(
+          service: _journalDataService,
+          onImported: () async {
+            _loadPreferences();
+            _loadGeneration++;
+            await _loadTasksForSelectedDay();
+          },
+        );
+      },
+    );
+  }
+
   void _showCategoryFilterMenu() {
     showDialog<void>(
       context: context,
@@ -245,6 +268,11 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
       appBar: AppBar(
         title: const Text('AcrossTool Journal'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync_alt),
+            tooltip: '데이터 가져오기 /보내기',
+            onPressed: _showDataTransferDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list_alt),
             tooltip: '카테고리 필터',
