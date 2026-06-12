@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/task_slot.dart';
 import '../repositories/task_repository.dart';
+import '../widgets/journal_calendar.dart';
 
 /// PRD 메인 화면 진입점. 600px 브레이크포인트로 PC/모바일 레이아웃을 분기합니다.
 class AcrossToolMainScreen extends StatefulWidget {
@@ -136,7 +137,7 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
               children: [
                 Expanded(
                   flex: 6,
-                  child: _CalendarPlaceholder(
+                  child: JournalCalendar(
                     selectedDay: _selectedDay,
                     onDaySelected: _onDaySelected,
                   ),
@@ -159,43 +160,11 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen> {
             );
           }
 
-          return _CalendarPlaceholder(
+          return JournalCalendar(
             selectedDay: _selectedDay,
             onDaySelected: _onDaySelected,
           );
         },
-      ),
-    );
-  }
-}
-
-class _CalendarPlaceholder extends StatelessWidget {
-  const _CalendarPlaceholder({
-    required this.selectedDay,
-    required this.onDaySelected,
-  });
-
-  final DateTime selectedDay;
-  final ValueChanged<DateTime> onDaySelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '${selectedDay.year}년 ${selectedDay.month}월',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          const Text('달력 위젯 (table_calendar 연동 예정)'),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => onDaySelected(DateTime.now()),
-            child: const Text('오늘 선택'),
-          ),
-        ],
       ),
     );
   }

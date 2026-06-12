@@ -18,7 +18,7 @@
 | 웹 (React) | Flutter (목표) | PRD 참조 |
 |------------|----------------|----------|
 | `App.tsx` | `lib/screens/acrosstool_main_screen.dart` | §3.1 |
-| `Calendar.tsx` | `lib/widgets/journal_calendar.dart` | §3.2 |
+| `Calendar.tsx` | `lib/widgets/journal_calendar.dart` (날짜 선택 완료) | §3.2 |
 | `TimelinePanel.tsx` | `lib/widgets/timeline_panel.dart` | §3.3 |
 | `MobileBottomSheet.tsx` | `showModalBottomSheet` | §3.2.2 |
 | `CategoryFilterMenu.tsx` | `PopupMenuButton` / `showModalBottomSheet` | §3.4 |
@@ -107,7 +107,7 @@ flutter/
 
 1. `AcrossToolMainScreen` 반응형 레이아웃 (600px) — **스켈레톤 완료**
 2. Hive 기반 `TaskRepository` + 5슬롯 CRUD — **완료**
-3. `table_calendar` + 날짜 선택 연동
+3. `table_calendar` + 날짜 선택 연동 — **완료**
 4. `TimelinePanel` 체크박스·텍스트 편집
 5. 모바일 `showModalBottomSheet`
 6. 카테고리 필터 + 사용자 정의 카테고리
