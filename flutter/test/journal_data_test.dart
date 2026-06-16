@@ -49,7 +49,7 @@ void main() {
         'userCategories': [],
         'selectedFilter': '전체',
       }),
-      isFalse,
+      isTrue,
     );
   });
 }

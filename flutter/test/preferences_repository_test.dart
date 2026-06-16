@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:acrosstool_journal/models/category_store.dart';
+import 'package:acrosstool_journal/models/journal_category_tab.dart';
 import 'package:acrosstool_journal/repositories/preferences_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
@@ -33,5 +34,12 @@ void main() {
 
     expect(repository.loadUserCategories(), ['취미']);
     expect(repository.loadSelectedFilter(), '운동');
+  });
+
+  test('persists analytics tab id without hanging', () async {
+    await repository.saveSelectedTabId(JournalCategoryTab.analyticsId);
+
+    expect(repository.loadSelectedTabId(), JournalCategoryTab.analyticsId);
+    expect(repository.loadSelectedFilter(), CategoryStore.filterAll);
   });
 }

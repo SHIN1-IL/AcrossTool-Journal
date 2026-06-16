@@ -16,24 +16,24 @@ flutter pub get
 flutter test
 flutter analyze
 
-# Chrome에서 스켈레톤 확인 (가장 간단)
-flutter run -d chrome
+# 브라우저에서 http://localhost:8080 접속 (권장)
+flutter run -d web-server --web-hostname=localhost --web-port=8080
 
-# 연결된 기기 목록 확인
-flutter devices
+# Chrome 자동 실행 (디버깅용)
+flutter run -d chrome --web-port=8080
 ```
+
+UI가 갱신되지 않으면 `flutter clean` 후 위 명령을 다시 실행하고, 브라우저에서 **Cmd+Shift+R**로 강력 새로고침하세요.
 
 ## 현재 구현
 
-- `AcrossToolMainScreen` — 600px `LayoutBuilder` 반응형 분기
-- PC: 60/40 2분할 (`JournalCalendar` + 타임라인 패널)
-- 모바일: `JournalCalendar` + `showModalBottomSheet` (height 300, radius 20)
-- `JournalCalendar` — `table_calendar` 기반 월별 달력, 날짜 선택 → `TaskRepository` 연동
-- `CompletionMarker` — 완료율 티어(0/low/medium/high) 원형 마커, 달력 셀 표시
-- `TaskRepository` — Hive 기반 5슬롯 CRUD (체크·라벨 편집, 날짜별 저장)
-- `PreferencesRepository` + `CategoryFilterMenu` — 카테고리 필터·사용자 정의 카테고리
-- `CategorySelect` — 타임라인 행별 카테고리 지정
-- `JournalDataService` — 웹↔Flutter 공유 JSON 스키마 import/export
+- `AcrossToolMainScreen` — 카테고리 탭 + 전체 너비 달력
+- `CategoryTabBar` — 다이어리 스타일 탭, `+`로 카테고리 추가
+- `JournalCalendar` — `table_calendar` 6주 그리드, 화면 하단까지 채움
+- `TimelinePanel` — 날짜 선택 시 바텀시트 일정 UI
+- `TaskRepository` — Hive 기반 일정 CRUD
+- `PreferencesRepository` — 카테고리 탭·선택 탭 영속화
+- `JournalDataService` — 웹↔Flutter 공유 JSON import/export
 
 ## 마이그레이션 참고
 

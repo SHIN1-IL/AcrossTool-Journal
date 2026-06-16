@@ -18,6 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="A new Flutter project.">
 
   <!-- iOS meta tags & icons -->
@@ -31,8 +32,36 @@
 
   <title>acrosstool_journal</title>
   <link rel="manifest" href="manifest.json">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    body > flutter-view,
+    body > flt-glass-pane {
+      height: 100% !important;
+      width: 100% !important;
+    }
+  </style>
 </head>
 <body>
+  <script>
+    // 이전 빌드의 service worker·캐시가 localhost:8080에서 구버전 UI를 보여주는 것을 방지.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      });
+    }
+    if (window.caches) {
+      caches.keys().then(function (names) {
+        names.forEach(function (name) { caches.delete(name); });
+      });
+    }
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

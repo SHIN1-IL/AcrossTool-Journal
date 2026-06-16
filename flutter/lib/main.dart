@@ -8,15 +8,35 @@ import 'screens/acrosstool_main_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('ko_KR');
-  final taskRepository = await TaskRepository.create();
-  final preferencesRepository = await PreferencesRepository.create();
-  runApp(
-    AcrossToolJournalApp(
-      taskRepository: taskRepository,
-      preferencesRepository: preferencesRepository,
-    ),
-  );
+
+  try {
+    await initializeDateFormatting('ko_KR');
+    final taskRepository = await TaskRepository.create();
+    final preferencesRepository = await PreferencesRepository.create();
+    runApp(
+      AcrossToolJournalApp(
+        taskRepository: taskRepository,
+        preferencesRepository: preferencesRepository,
+      ),
+    );
+  } catch (error, stackTrace) {
+    debugPrint('앱 초기화 실패: $error\n$stackTrace');
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                '앱을 시작하지 못했습니다.\n$error',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class AcrossToolJournalApp extends StatelessWidget {

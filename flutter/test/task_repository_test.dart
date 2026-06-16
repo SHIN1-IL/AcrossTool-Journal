@@ -32,15 +32,39 @@ void main() {
     expect(store[todayKey]!.first.completed, isTrue);
   });
 
-  test('ensureTasksForDate creates empty slots for new date', () async {
+  test('ensureTasksForDate creates empty list for new date', () async {
     final newDate = DateTime(2026, 1, 15);
     final tasks = await repository.ensureTasksForDate(newDate);
 
-    expect(tasks, hasLength(TaskSlot.maxSlots));
-    expect(tasks.every((task) => task.label.isEmpty), isTrue);
+    expect(tasks, isEmpty);
 
     final reloaded = repository.getTasksForDate(newDate);
-    expect(reloaded, hasLength(TaskSlot.maxSlots));
+    expect(reloaded, isEmpty);
+  });
+
+  test('addTask appends time-based entry for category', () async {
+    final date = DateTime(2026, 3, 1);
+    await repository.ensureTasksForDate(date);
+
+    final tasks = await repository.addTask(
+      date,
+      category: '운동',
+      label: '런닝',
+    );
+
+    expect(tasks, hasLength(1));
+    expect(tasks.first.label, '런닝');
+    expect(tasks.first.category, '운동');
+    expect(tasks.first.time, isNotNull);
+  });
+
+  test('removeTask deletes entry by id', () async {
+    final date = DateTime(2026, 3, 2);
+    final added = await repository.addTask(date, category: '학습');
+    final taskId = added.first.id;
+
+    final updated = await repository.removeTask(date, taskId);
+    expect(updated, isEmpty);
   });
 
   test('toggleTask flips completed flag and persists', () async {

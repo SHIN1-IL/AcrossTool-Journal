@@ -92,7 +92,7 @@ class JournalData {
       if (entry.key is! String || !_dateKeyPattern.hasMatch(entry.key as String)) {
         return false;
       }
-      if (entry.value is! List || (entry.value as List).length != TaskSlot.maxSlots) {
+      if (entry.value is! List) {
         return false;
       }
       for (final slot in entry.value as List) {
@@ -122,12 +122,14 @@ class JournalData {
     final completed = slot['completed'];
     final category = slot['category'];
 
+    final time = slot['time'];
+
     return id is int &&
         id >= 1 &&
-        id <= TaskSlot.maxSlots &&
         label is String &&
         completed is bool &&
-        (category == null || category is String);
+        (category == null || category is String) &&
+        (time == null || time is String);
   }
 
   static TaskStoreData _parseTaskStore(Map<String, dynamic> raw) {
