@@ -25,7 +25,6 @@ void main() {
     ),
     required ValueChanged<DateTime> onDaySelected,
     ValueChanged<DateTime>? onMonthEndReport,
-    Color backgroundColor = Colors.white,
   }) {
     return MaterialApp(
       locale: const Locale('ko', 'KR'),
@@ -49,7 +48,6 @@ void main() {
                     taskStore: taskStore,
                     activeTab: activeTab,
                     categoryColors: const {},
-                    backgroundColor: backgroundColor,
                     onDaySelected: onDaySelected,
                     onMonthEndReport: onMonthEndReport ?? (_) {},
                   ),

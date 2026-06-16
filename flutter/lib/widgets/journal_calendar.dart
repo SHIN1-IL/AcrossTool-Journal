@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../models/category_tab_store.dart';
 import '../models/completion_rate.dart';
 import '../models/journal_category_tab.dart';
 import '../models/task_slot.dart';
 import '../repositories/task_repository.dart';
 import '../utils/date_key.dart';
 import '../utils/category_theme.dart';
-import '../utils/layout_units.dart';
 import 'completion_marker.dart';
 
 /// 웹 MVP `CalendarPage` 레이아웃 대응.
@@ -28,9 +28,9 @@ class JournalCalendar extends StatefulWidget {
     required this.taskStore,
     required this.activeTab,
     required this.categoryColors,
-    required this.backgroundColor,
     required this.onDaySelected,
     required this.onMonthEndReport,
+    this.topContentInset = 0,
   });
 
   final DateTime selectedDay;
@@ -38,9 +38,10 @@ class JournalCalendar extends StatefulWidget {
   final TaskStoreData taskStore;
   final JournalCategoryTab activeTab;
   final Map<String, Color> categoryColors;
-  final Color backgroundColor;
   final ValueChanged<DateTime> onDaySelected;
   final ValueChanged<DateTime> onMonthEndReport;
+  /// 카테고리 헤더 오버레이 아래로 본문(월 헤더·그리드)을 내릴 때 사용.
+  final double topContentInset;
 
   @override
   State<JournalCalendar> createState() => _JournalCalendarState();
@@ -126,17 +127,10 @@ class _JournalCalendarState extends State<JournalCalendar> {
   }
 
   List<TaskSlot> _visibleTasksForDay(DateTime day) {
-    final tasks = _tasksForDay(day);
-    if (widget.activeTab.isOverview) {
-      return tasks.where((task) => task.label.trim().isNotEmpty).toList();
-    }
-    return tasks
-        .where(
-          (task) =>
-              task.category == widget.activeTab.title &&
-              task.label.trim().isNotEmpty,
-        )
-        .toList();
+    return CategoryTabStore.filterTasksForTab(
+      _tasksForDay(day),
+      widget.activeTab,
+    );
   }
 
   void _handleDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -163,49 +157,89 @@ class _JournalCalendarState extends State<JournalCalendar> {
   Widget _buildMonthHeader() {
     final title = DateFormat.yMMMM('ko_KR').format(_focusedDay);
 
-    return Row(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left, color: CategoryTheme.calendarMonthTitleText),
-          tooltip: '이전 달',
-          onPressed: _goToPreviousMonth,
-        ),
-        Expanded(
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w400,
+    return SizedBox(
+      height: 36,
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(
+              Icons.chevron_left,
               color: CategoryTheme.calendarMonthTitleText,
+              size: 22,
+            ),
+            tooltip: '이전 달',
+            visualDensity: VisualDensity.compact,
+            onPressed: _goToPreviousMonth,
+          ),
+          Expanded(
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: CategoryTheme.calendarMonthTitleText,
+              ),
             ),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.chevron_right, color: CategoryTheme.calendarMonthTitleText),
-          tooltip: '다음 달',
-          onPressed: _goToNextMonth,
-        ),
-      ],
+          IconButton(
+            icon: const Icon(
+              Icons.chevron_right,
+              color: CategoryTheme.calendarMonthTitleText,
+              size: 22,
+            ),
+            tooltip: '다음 달',
+            visualDensity: VisualDensity.compact,
+            onPressed: _goToNextMonth,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildDaysOfWeekRow() {
     const labelStyle = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w400,
+      fontSize: 10,
+      fontWeight: FontWeight.w500,
       color: CategoryTheme.calendarWeekdayText,
     );
 
-    return Row(
-      children: [
-        for (final label in _weekdayLabels)
-          Expanded(
-            child: Center(
-              child: Text(label, style: labelStyle),
+    return SizedBox(
+      height: 18,
+      child: Row(
+        children: [
+          for (final label in _weekdayLabels)
+            Expanded(
+              child: Center(
+                child: Text(label, style: labelStyle),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarChromeOverlay() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.black.withValues(alpha: 0.38),
+            Colors.black.withValues(alpha: 0.18),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.72, 1.0],
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildMonthHeader(),
+          _buildDaysOfWeekRow(),
+        ],
+      ),
     );
   }
 
@@ -229,7 +263,6 @@ class _JournalCalendarState extends State<JournalCalendar> {
 
     return BoxDecoration(
       color: background,
-      borderRadius: BorderRadius.circular(4),
       border: Border.all(color: borderColor, width: borderWidth),
     );
   }
@@ -256,16 +289,14 @@ class _JournalCalendarState extends State<JournalCalendar> {
       label: buildCalendarDateAriaLabel(day, entry),
       selected: isSelected,
       button: true,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: SizedBox.expand(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(0.5, 0.5, 0.5, 0),
-            decoration: _cellDecoration(
-              isSelected: isSelected,
-              isToday: isToday,
-            ),
-            padding: const EdgeInsets.all(8),
+      child: SizedBox.expand(
+        child: DecoratedBox(
+          decoration: _cellDecoration(
+            isSelected: isSelected,
+            isToday: isToday,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(6, 4, 4, 4),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,50 +405,55 @@ class _JournalCalendarState extends State<JournalCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: kCalendarBottomMarginPx),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SizedBox(
-            height: constraints.maxHeight,
-            width: constraints.maxWidth,
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildMonthHeader(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: _buildDaysOfWeekRow(),
-                  ),
-                  Expanded(
-                    child: PageView.builder(
-                        controller: _pageController,
-                        onPageChanged: (index) {
-                          setState(
-                            () => _focusedDay =
-                                _dateOnly(_monthForPageIndex(index)),
-                          );
-                        },
-                        itemCount: _monthPageCount,
-                        itemBuilder: (context, index) {
-                          final month = _monthForPageIndex(index);
-                          final isFocusedPage =
-                              index == _monthPageIndex(_focusedDay);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          height: constraints.maxHeight,
+          width: constraints.maxWidth,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (widget.topContentInset > 0)
+                SizedBox(height: widget.topContentInset),
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(
+                          () => _focusedDay =
+                              _dateOnly(_monthForPageIndex(index)),
+                        );
+                      },
+                      itemCount: _monthPageCount,
+                      itemBuilder: (context, index) {
+                        final month = _monthForPageIndex(index);
+                        final isFocusedPage =
+                            index == _monthPageIndex(_focusedDay);
 
-                          return _buildDateGrid(
-                            month,
-                            key: isFocusedPage
-                                ? const Key('journal-calendar-grid')
-                                : null,
-                          );
-                        },
-                      ),
+                        return _buildDateGrid(
+                          month,
+                          key: isFocusedPage
+                              ? const Key('journal-calendar-grid')
+                              : null,
+                        );
+                      },
                     ),
-                ],
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: _buildCalendarChromeOverlay(),
+                    ),
+                  ],
+                ),
               ),
-          );
-        },
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

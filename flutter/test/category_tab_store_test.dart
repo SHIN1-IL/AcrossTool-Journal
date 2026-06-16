@@ -1,5 +1,6 @@
 import 'package:acrosstool_journal/models/category_tab_store.dart';
 import 'package:acrosstool_journal/models/journal_category_tab.dart';
+import 'package:acrosstool_journal/models/task_slot.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -47,5 +48,56 @@ void main() {
       JournalCategoryTab.analyticsId,
     );
     expect(tab?.isAnalytics, isTrue);
+  });
+
+  test('filterTasksForTab applies overview and category rules', () {
+    const overview = JournalCategoryTab(
+      id: JournalCategoryTab.overviewId,
+      title: JournalCategoryTab.overviewTitle,
+      colorValue: 0xFFFFFFFF,
+      isOverview: true,
+    );
+    const categoryTab = JournalCategoryTab(
+      id: 'cat-1',
+      title: '운동',
+      colorValue: 0xFFEC407A,
+    );
+    const tasks = [
+      TaskSlot(id: 1, label: '런닝', completed: false, category: '운동', time: '09:00'),
+      TaskSlot(id: 2, label: '', completed: false, category: '운동', time: '10:00'),
+      TaskSlot(id: 3, label: '독서', completed: false, category: '학습', time: '08:00'),
+    ];
+
+    expect(
+      CategoryTabStore.filterTasksForTab(tasks, overview).map((t) => t.id),
+      [1, 3],
+    );
+    expect(
+      CategoryTabStore.filterTasksForTab(tasks, categoryTab).map((t) => t.id),
+      [1],
+    );
+    expect(
+      CategoryTabStore.filterTasksForTab(
+        tasks,
+        categoryTab,
+        includeEmptyLabels: true,
+      ).map((t) => t.id),
+      [1, 2],
+    );
+    expect(
+      CategoryTabStore.filterTasksForTab(
+        tasks,
+        categoryTab,
+        sortByTime: true,
+      ).map((t) => t.id),
+      [1],
+    );
+    expect(
+      CategoryTabStore.filterTasksForTab(
+        tasks,
+        JournalCategoryTab.analytics(),
+      ),
+      isEmpty,
+    );
   });
 }

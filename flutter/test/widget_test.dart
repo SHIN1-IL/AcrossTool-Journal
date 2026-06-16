@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:acrosstool_journal/repositories/preferences_repository.dart';
 import 'package:acrosstool_journal/repositories/task_repository.dart';
 import 'package:acrosstool_journal/screens/acrosstool_main_screen.dart';
-import 'package:acrosstool_journal/utils/layout_units.dart';
 import 'package:acrosstool_journal/widgets/category_tab_bar.dart';
 import 'package:acrosstool_journal/widgets/journal_calendar.dart';
 import 'package:flutter/material.dart';
@@ -54,12 +53,12 @@ void main() {
     );
   }
 
-  testWidgets('AcrossToolMainScreen renders footer branding', (tester) async {
+  testWidgets('AcrossToolMainScreen renders data sync control', (tester) async {
     await tester.pumpWidget(buildApp(buildScreen()));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('AcrossTool Journal'), findsOneWidget);
+    expect(find.byIcon(Icons.sync_alt), findsOneWidget);
     expect(find.byType(AcrossToolMainScreen), findsOneWidget);
   });
 
@@ -83,7 +82,7 @@ void main() {
     expect(find.text('오늘 일과 5줄'), findsNothing);
   });
 
-  testWidgets('Calendar grid fills viewport with bottom margin', (tester) async {
+  testWidgets('Calendar grid fills viewport to bottom edge', (tester) async {
     tester.view.physicalSize = const Size(900, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -114,14 +113,14 @@ void main() {
     final screenBottom =
         scaffoldBox.localToGlobal(Offset(0, scaffoldBox.size.height)).dy;
 
-    expect(screenBottom - gridBottom, closeTo(kCalendarBottomMarginPx, 12));
+    expect(screenBottom - gridBottom, closeTo(0, 4));
     expect(
       calendarBox.size.height,
-      closeTo(900 - CategoryTabBar.barHeight, 5),
+      closeTo(900, 5),
     );
     expect(
       gridBox.size.height,
-      greaterThan(calendarBox.size.height * 0.7),
+      greaterThan(calendarBox.size.height * 0.88),
     );
   });
 
@@ -187,10 +186,9 @@ void main() {
     await tester.ensureVisible(batchAddButton);
     await tester.pumpAndSettle(); // 렌더링 안정화
 
-    // 2. InkWell 내부의 + 아이콘을 타겟으로 탭 (버튼은 텍스트 없이 Icons.add만 사용)
     final batchAddIcon = find.descendant(
       of: batchAddButton,
-      matching: find.byIcon(Icons.add),
+      matching: find.byIcon(Icons.add_rounded),
     );
     await tester.tap(batchAddIcon);
     await tester.pumpAndSettle();

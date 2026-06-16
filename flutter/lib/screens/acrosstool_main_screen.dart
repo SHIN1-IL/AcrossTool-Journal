@@ -9,8 +9,6 @@ import '../repositories/preferences_repository.dart';
 import '../repositories/task_repository.dart';
 import '../services/journal_data_service.dart';
 import '../utils/category_theme.dart';
-import '../utils/layout_units.dart';
-import '../utils/time_format.dart';
 import '../widgets/analytics_panel.dart';
 import '../widgets/category_tab_bar.dart';
 import '../widgets/journal_calendar.dart';
@@ -79,13 +77,12 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
   }
 
   List<TaskSlot> get _displayTasks {
-    if (_isOverviewMode) {
-      return _tasks.where((task) => task.label.trim().isNotEmpty).toList();
-    }
-    return _tasks
-        .where((task) => task.category == _activeTab.title)
-        .toList()
-      ..sort((a, b) => compareTimeStrings(a.time, b.time));
+    return CategoryTabStore.filterTasksForTab(
+      _tasks,
+      _activeTab,
+      includeEmptyLabels: !_isOverviewMode,
+      sortByTime: !_isOverviewMode,
+    );
   }
 
   @override
@@ -349,6 +346,7 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
   @override
   Widget build(BuildContext context) {
     final viewportHeight = MediaQuery.sizeOf(context).height;
+    final headerHeight = CategoryTabBar.barHeight;
 
     return Scaffold(
       backgroundColor: _pageBackgroundColor,
@@ -356,12 +354,33 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
       body: SizedBox(
         height: viewportHeight,
         width: double.infinity,
-        child: ColoredBox(
-          color: _pageBackgroundColor,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              CategoryTabBar(
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: CategoryTheme.calendarGradientFor(
+                    _calendarTab,
+                  ),
+                ),
+                child: JournalCalendar(
+                  selectedDay: _selectedDay,
+                  completionRates: _calendarCompletionRates,
+                  taskStore: widget.taskRepository.loadStore(),
+                  activeTab: _calendarTab,
+                  categoryColors: _categoryColors,
+                  topContentInset: headerHeight,
+                  onDaySelected: _onDaySelected,
+                  onMonthEndReport: _showMonthlyReport,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: CategoryTabBar(
                 tabs: _categoryTabs,
                 selectedTabId: _selectedTabId,
                 onTabSelected: _onTabSelected,
@@ -370,70 +389,32 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
                 onTabRemoved: _onTabRemoved,
                 onAnalyticsSelected: _onAnalyticsSelected,
               ),
-              Expanded(
-                child: Stack(
-                  clipBehavior: Clip.hardEdge,
-                  children: [
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: CategoryTheme.calendarGradientFor(
-                            _calendarTab,
-                          ),
-                        ),
-                        child: JournalCalendar(
-                          selectedDay: _selectedDay,
-                          completionRates: _calendarCompletionRates,
-                          taskStore: widget.taskRepository.loadStore(),
-                          activeTab: _calendarTab,
-                          categoryColors: _categoryColors,
-                          backgroundColor: Colors.transparent,
-                          onDaySelected: _onDaySelected,
-                          onMonthEndReport: _showMonthlyReport,
-                        ),
-                      ),
-                    ),
-                    if (!_isAnalyticsMode) ...[
-                      Positioned(
-                        top: 4,
-                        right: 48,
-                        child: Text(
-                          'AcrossTool Journal',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color:
-                                kBrandingLineColor.withValues(alpha: 0.9),
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 2,
-                        right: 0,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.sync_alt,
-                            size: 20,
-                            color:
-                                _calendarTab.accentColor.withValues(alpha: 0.7),
-                          ),
-                          tooltip: '데이터 가져오기 /보내기',
-                          onPressed: _showDataTransferDialog,
-                        ),
-                      ),
-                    ],
-                    if (_isAnalyticsMode)
-                      const Positioned.fill(
-                        child: AnalyticsPanel(
-                          key: Key('analytics-panel-view'),
-                        ),
-                      ),
-                  ],
+            ),
+            if (!_isAnalyticsMode)
+              Positioned(
+                top: headerHeight + 2,
+                right: 0,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.sync_alt,
+                    size: 20,
+                    color: _calendarTab.accentColor.withValues(alpha: 0.7),
+                  ),
+                  tooltip: '데이터 가져오기 /보내기',
+                  onPressed: _showDataTransferDialog,
                 ),
               ),
-            ],
-          ),
+            if (_isAnalyticsMode)
+              Positioned(
+                top: headerHeight,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: const AnalyticsPanel(
+                  key: Key('analytics-panel-view'),
+                ),
+              ),
+          ],
         ),
       ),
     );

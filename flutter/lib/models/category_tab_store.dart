@@ -1,4 +1,6 @@
 import 'journal_category_tab.dart';
+import 'task_slot.dart';
+import '../utils/time_format.dart';
 
 /// 카테고리 탭 추가·색상·개수 제한 로직.
 class CategoryTabStore {
@@ -192,5 +194,37 @@ class CategoryTabStore {
       }
     }
     return null;
+  }
+
+  /// 활성 탭 기준으로 일과 목록을 필터링합니다.
+  ///
+  /// [includeEmptyLabels] — 카테고리 탭에서 라벨 없는 빈 슬롯 포함 여부.
+  /// 타임라인 편집 UI는 `true`, 달력 셀 미리보기는 `false`를 사용합니다.
+  static List<TaskSlot> filterTasksForTab(
+    List<TaskSlot> tasks,
+    JournalCategoryTab tab, {
+    bool includeEmptyLabels = false,
+    bool sortByTime = false,
+  }) {
+    if (tab.isAnalytics) {
+      return const [];
+    }
+
+    final Iterable<TaskSlot> filtered;
+    if (tab.isOverview) {
+      filtered = tasks.where((task) => task.label.trim().isNotEmpty);
+    } else {
+      final byCategory =
+          tasks.where((task) => task.category == tab.title);
+      filtered = includeEmptyLabels
+          ? byCategory
+          : byCategory.where((task) => task.label.trim().isNotEmpty);
+    }
+
+    final result = filtered.toList();
+    if (sortByTime) {
+      result.sort((a, b) => compareTimeStrings(a.time, b.time));
+    }
+    return result;
   }
 }
