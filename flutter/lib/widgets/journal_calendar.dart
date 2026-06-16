@@ -1,25 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:table_calendar/table_calendar.dart';
 
-import '../models/category_tab_store.dart';
 import '../models/completion_rate.dart';
 import '../models/journal_category_tab.dart';
-import '../models/task_slot.dart';
 import '../repositories/task_repository.dart';
-import '../utils/date_key.dart';
-import '../utils/category_theme.dart';
-import 'completion_marker.dart';
+import '../utils/calendar_date_utils.dart';
+import 'calendar_chrome_overlay.dart';
+import 'calendar_date_grid.dart';
 
-/// 웹 MVP `CalendarPage` 레이아웃 대응.
-///
-/// ```text
-/// Column (h-full)
-/// ├─ header (flex-shrink-0) — 월 네비게이션
-/// └─ main   (flex-1)        — 요일 + 날짜 그리드
-///    ├─ weekday row (flex-shrink-0)
-///    └─ date grid   (flex-1, grid-rows-6)
-/// ```
+/// 전체 화면 달력 — 월 페이징과 날짜 그리드를 조합합니다.
 class JournalCalendar extends StatefulWidget {
   const JournalCalendar({
     super.key,
@@ -27,7 +15,6 @@ class JournalCalendar extends StatefulWidget {
     required this.completionRates,
     required this.taskStore,
     required this.activeTab,
-    required this.categoryColors,
     required this.onDaySelected,
     required this.onMonthEndReport,
     this.topContentInset = 0,
@@ -37,10 +24,9 @@ class JournalCalendar extends StatefulWidget {
   final CompletionRateMap completionRates;
   final TaskStoreData taskStore;
   final JournalCategoryTab activeTab;
-  final Map<String, Color> categoryColors;
   final ValueChanged<DateTime> onDaySelected;
   final ValueChanged<DateTime> onMonthEndReport;
-  /// 카테고리 헤더 오버레이 아래로 본문(월 헤더·그리드)을 내릴 때 사용.
+  /// 카테고리 헤더 오버레이 아래로 그리드 영역을 내릴 때 사용.
   final double topContentInset;
 
   @override
@@ -51,34 +37,24 @@ class _JournalCalendarState extends State<JournalCalendar> {
   late DateTime _focusedDay;
   late final PageController _pageController;
 
-  static final DateTime _firstDay = DateTime(2020, 1, 1);
-  static final DateTime _lastDay = DateTime(2035, 12, 31);
-  static const int _weekRows = 6;
   static const Duration _pageAnimationDuration =
       Duration(milliseconds: 300);
-  static const List<String> _weekdayLabels = [
-    '일',
-    '월',
-    '화',
-    '수',
-    '목',
-    '금',
-    '토',
-  ];
 
   @override
   void initState() {
     super.initState();
-    _focusedDay = _dateOnly(widget.selectedDay);
-    _pageController = PageController(initialPage: _monthPageIndex(_focusedDay));
+    _focusedDay = CalendarDateUtils.dateOnly(widget.selectedDay);
+    _pageController = PageController(
+      initialPage: CalendarDateUtils.monthPageIndex(_focusedDay),
+    );
   }
 
   @override
   void didUpdateWidget(JournalCalendar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!isSameDay(oldWidget.selectedDay, widget.selectedDay)) {
-      _focusedDay = _dateOnly(widget.selectedDay);
-      final page = _monthPageIndex(_focusedDay);
+    if (!CalendarDateUtils.isSameDay(oldWidget.selectedDay, widget.selectedDay)) {
+      _focusedDay = CalendarDateUtils.dateOnly(widget.selectedDay);
+      final page = CalendarDateUtils.monthPageIndex(_focusedDay);
       if (_pageController.hasClients && _pageController.page?.round() != page) {
         _pageController.jumpToPage(page);
       }
@@ -91,53 +67,11 @@ class _JournalCalendarState extends State<JournalCalendar> {
     super.dispose();
   }
 
-  DateTime _dateOnly(DateTime day) => DateTime(day.year, day.month, day.day);
-
-  int _monthPageIndex(DateTime month) {
-    return (month.year - _firstDay.year) * 12 + month.month - _firstDay.month;
-  }
-
-  int get _monthPageCount => _monthPageIndex(_lastDay) + 1;
-
-  DateTime _monthForPageIndex(int index) {
-    return DateTime(_firstDay.year, _firstDay.month + index);
-  }
-
-  List<DateTime> _visibleDaysForMonth(DateTime month) {
-    final first = DateTime(month.year, month.month);
-    final daysBefore = first.weekday % 7;
-    final firstToDisplay = first.subtract(Duration(days: daysBefore));
-    return List.generate(
-      _weekRows * 7,
-      (index) => DateTime(
-        firstToDisplay.year,
-        firstToDisplay.month,
-        firstToDisplay.day + index,
-      ),
-    );
-  }
-
-  bool _isLastDayOfMonth(DateTime day) {
-    final last = DateTime(day.year, day.month + 1, 0).day;
-    return day.day == last;
-  }
-
-  List<TaskSlot> _tasksForDay(DateTime day) {
-    return widget.taskStore[dateKey(day)] ?? [];
-  }
-
-  List<TaskSlot> _visibleTasksForDay(DateTime day) {
-    return CategoryTabStore.filterTasksForTab(
-      _tasksForDay(day),
-      widget.activeTab,
-    );
-  }
-
-  void _handleDaySelected(DateTime selectedDay, DateTime focusedDay) {
-    if (!isSameDay(widget.selectedDay, selectedDay)) {
-      widget.onDaySelected(_dateOnly(selectedDay));
+  void _handleDaySelected(DateTime day) {
+    if (!CalendarDateUtils.isSameDay(widget.selectedDay, day)) {
+      widget.onDaySelected(CalendarDateUtils.dateOnly(day));
     }
-    setState(() => _focusedDay = _dateOnly(focusedDay));
+    setState(() => _focusedDay = CalendarDateUtils.dateOnly(day));
   }
 
   void _goToPreviousMonth() {
@@ -151,255 +85,6 @@ class _JournalCalendarState extends State<JournalCalendar> {
     _pageController.nextPage(
       duration: _pageAnimationDuration,
       curve: Curves.easeOut,
-    );
-  }
-
-  Widget _buildMonthHeader() {
-    final title = DateFormat.yMMMM('ko_KR').format(_focusedDay);
-
-    return SizedBox(
-      height: 36,
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(
-              Icons.chevron_left,
-              color: CategoryTheme.calendarMonthTitleText,
-              size: 22,
-            ),
-            tooltip: '이전 달',
-            visualDensity: VisualDensity.compact,
-            onPressed: _goToPreviousMonth,
-          ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: CategoryTheme.calendarMonthTitleText,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.chevron_right,
-              color: CategoryTheme.calendarMonthTitleText,
-              size: 22,
-            ),
-            tooltip: '다음 달',
-            visualDensity: VisualDensity.compact,
-            onPressed: _goToNextMonth,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDaysOfWeekRow() {
-    const labelStyle = TextStyle(
-      fontSize: 10,
-      fontWeight: FontWeight.w500,
-      color: CategoryTheme.calendarWeekdayText,
-    );
-
-    return SizedBox(
-      height: 18,
-      child: Row(
-        children: [
-          for (final label in _weekdayLabels)
-            Expanded(
-              child: Center(
-                child: Text(label, style: labelStyle),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCalendarChromeOverlay() {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withValues(alpha: 0.38),
-            Colors.black.withValues(alpha: 0.18),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.72, 1.0],
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildMonthHeader(),
-          _buildDaysOfWeekRow(),
-        ],
-      ),
-    );
-  }
-
-  BoxDecoration _cellDecoration({
-    required bool isSelected,
-    required bool isToday,
-  }) {
-    Color background = CategoryTheme.calendarCellFill;
-    Color borderColor = CategoryTheme.calendarCellBorder;
-    var borderWidth = 0.5;
-
-    if (isSelected) {
-      background = CategoryTheme.calendarSelectedCellFill;
-      borderColor = Colors.white54;
-      borderWidth = 1;
-    } else if (isToday) {
-      background = Colors.white30;
-      borderColor = Colors.white54;
-      borderWidth = 0.8;
-    }
-
-    return BoxDecoration(
-      color: background,
-      border: Border.all(color: borderColor, width: borderWidth),
-    );
-  }
-
-  Widget _buildDayCell(
-    BuildContext context,
-    DateTime day, {
-    required bool isSelected,
-    required bool isToday,
-  }) {
-    final entry = getCompletionEntryForDate(widget.completionRates, day);
-    final visibleTasks = _visibleTasksForDay(day);
-    final isLastDay = _isLastDayOfMonth(day);
-
-    final textStyle = TextStyle(
-      color: CategoryTheme.calendarDateText.withValues(
-        alpha: isSelected || isToday ? 1 : 0.92,
-      ),
-      fontWeight: isToday || isSelected ? FontWeight.w600 : FontWeight.w400,
-      fontSize: 13,
-    );
-
-    return Semantics(
-      label: buildCalendarDateAriaLabel(day, entry),
-      selected: isSelected,
-      button: true,
-      child: SizedBox.expand(
-        child: DecoratedBox(
-          decoration: _cellDecoration(
-            isSelected: isSelected,
-            isToday: isToday,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(6, 4, 4, 4),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text('${day.day}', style: textStyle),
-                    if (isLastDay) ...[
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () => widget.onMonthEndReport(
-                          DateTime(day.year, day.month, 1),
-                        ),
-                        child: Icon(
-                          Icons.assessment_outlined,
-                          size: 11,
-                          color: CategoryTheme.calendarDateText.withValues(alpha: 0.85),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                if (widget.activeTab.isOverview)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (final task in visibleTasks.take(3))
-                        Text(
-                          task.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: CategoryTheme.calendarDateText.withValues(alpha: 0.88),
-                            decoration: task.completed
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
-                        ),
-                    ],
-                  )
-                else if (entry != null)
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: CompletionMarker(
-                      rate: entry.rate,
-                      selected: isSelected,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridCell(DateTime day, DateTime monthPage) {
-    final isOutside = day.month != monthPage.month;
-    if (isOutside) {
-      return SizedBox.expand(
-        child: ColoredBox(
-          color: Colors.white.withValues(alpha: 0.04),
-        ),
-      );
-    }
-
-    final isSelected = isSameDay(widget.selectedDay, day);
-    final isToday = isSameDay(DateTime.now(), day);
-
-    return SizedBox.expand(
-      child: GestureDetector(
-        onTap: () => _handleDaySelected(day, monthPage),
-        child: _buildDayCell(
-          context,
-          day,
-          isSelected: isSelected,
-          isToday: isToday,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDateGrid(DateTime month, {Key? key}) {
-    final days = _visibleDaysForMonth(month);
-
-    return Column(
-      key: key,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var week = 0; week < _weekRows; week++)
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var day = 0; day < 7; day++)
-                  Expanded(
-                    child: _buildGridCell(days[week * 7 + day], month),
-                  ),
-              ],
-            ),
-          ),
-      ],
     );
   }
 
@@ -423,21 +108,29 @@ class _JournalCalendarState extends State<JournalCalendar> {
                       controller: _pageController,
                       onPageChanged: (index) {
                         setState(
-                          () => _focusedDay =
-                              _dateOnly(_monthForPageIndex(index)),
+                          () => _focusedDay = CalendarDateUtils.dateOnly(
+                            CalendarDateUtils.monthForPageIndex(index),
+                          ),
                         );
                       },
-                      itemCount: _monthPageCount,
+                      itemCount: CalendarDateUtils.monthPageCount,
                       itemBuilder: (context, index) {
-                        final month = _monthForPageIndex(index);
+                        final month =
+                            CalendarDateUtils.monthForPageIndex(index);
                         final isFocusedPage =
-                            index == _monthPageIndex(_focusedDay);
+                            index == CalendarDateUtils.monthPageIndex(_focusedDay);
 
-                        return _buildDateGrid(
-                          month,
-                          key: isFocusedPage
+                        return CalendarDateGrid(
+                          gridKey: isFocusedPage
                               ? const Key('journal-calendar-grid')
                               : null,
+                          month: month,
+                          selectedDay: widget.selectedDay,
+                          activeTab: widget.activeTab,
+                          completionRates: widget.completionRates,
+                          taskStore: widget.taskStore,
+                          onDaySelected: _handleDaySelected,
+                          onMonthEndReport: widget.onMonthEndReport,
                         );
                       },
                     ),
@@ -445,7 +138,11 @@ class _JournalCalendarState extends State<JournalCalendar> {
                       top: 0,
                       left: 0,
                       right: 0,
-                      child: _buildCalendarChromeOverlay(),
+                      child: CalendarChromeOverlay(
+                        focusedMonth: _focusedDay,
+                        onPreviousMonth: _goToPreviousMonth,
+                        onNextMonth: _goToNextMonth,
+                      ),
                     ),
                   ],
                 ),

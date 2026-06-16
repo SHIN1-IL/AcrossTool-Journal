@@ -47,7 +47,6 @@ void main() {
                     completionRates: completionRates,
                     taskStore: taskStore,
                     activeTab: activeTab,
-                    categoryColors: const {},
                     onDaySelected: onDaySelected,
                     onMonthEndReport: onMonthEndReport ?? (_) {},
                   ),

@@ -209,9 +209,11 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
     await _loadTasksForSelectedDay();
   }
 
-  Future<void> _onToggleTask(int taskId) async {
+  Future<void> _mutateTasks(
+    Future<List<TaskSlot>> Function() mutation,
+  ) async {
     _loadGeneration++;
-    final tasks = await widget.taskRepository.toggleTask(_selectedDay, taskId);
+    final tasks = await mutation();
     if (!mounted) {
       return;
     }
@@ -219,65 +221,47 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
       _tasks = tasks;
       _isLoading = false;
     });
+  }
+
+  Future<void> _onToggleTask(int taskId) async {
+    await _mutateTasks(
+      () => widget.taskRepository.toggleTask(_selectedDay, taskId),
+    );
   }
 
   Future<void> _onLabelChanged(int taskId, String label) async {
-    _loadGeneration++;
-    final tasks = await widget.taskRepository.updateTaskLabel(
-      _selectedDay,
-      taskId,
-      label,
+    await _mutateTasks(
+      () => widget.taskRepository.updateTaskLabel(
+        _selectedDay,
+        taskId,
+        label,
+      ),
     );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _tasks = tasks;
-      _isLoading = false;
-    });
   }
 
   Future<void> _onTimeChanged(int taskId, String time) async {
-    _loadGeneration++;
-    final tasks = await widget.taskRepository.updateTaskTime(
-      _selectedDay,
-      taskId,
-      time,
+    await _mutateTasks(
+      () => widget.taskRepository.updateTaskTime(
+        _selectedDay,
+        taskId,
+        time,
+      ),
     );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _tasks = tasks;
-      _isLoading = false;
-    });
   }
 
   Future<void> _onAddTask() async {
-    _loadGeneration++;
-    final tasks = await widget.taskRepository.addTask(
-      _selectedDay,
-      category: _activeTab.title,
+    await _mutateTasks(
+      () => widget.taskRepository.addTask(
+        _selectedDay,
+        category: _activeTab.title,
+      ),
     );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _tasks = tasks;
-      _isLoading = false;
-    });
   }
 
   Future<void> _onRemoveTask(int taskId) async {
-    _loadGeneration++;
-    final tasks = await widget.taskRepository.removeTask(_selectedDay, taskId);
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _tasks = tasks;
-      _isLoading = false;
-    });
+    await _mutateTasks(
+      () => widget.taskRepository.removeTask(_selectedDay, taskId),
+    );
   }
 
   void _showDataTransferDialog() {
@@ -369,7 +353,6 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
                   completionRates: _calendarCompletionRates,
                   taskStore: widget.taskRepository.loadStore(),
                   activeTab: _calendarTab,
-                  categoryColors: _categoryColors,
                   topContentInset: headerHeight,
                   onDaySelected: _onDaySelected,
                   onMonthEndReport: _showMonthlyReport,
