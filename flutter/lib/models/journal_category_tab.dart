@@ -20,7 +20,7 @@ class JournalCategoryTab {
   /// 기본 1 + 초기 5 + 추가 5 = 최대 11.
   static const int maxTabs = 11;
   static const int initialEditableCount = 5;
-  static const int batchAddCount = 5;
+  static const int batchAddCount = 1;
   static const int maxTitleLength = 5;
 
   static const List<Color> pastelPalette = [

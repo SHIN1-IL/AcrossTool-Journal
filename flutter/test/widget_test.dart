@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:acrosstool_journal/repositories/preferences_repository.dart';
 import 'package:acrosstool_journal/repositories/task_repository.dart';
 import 'package:acrosstool_journal/screens/acrosstool_main_screen.dart';
+import 'package:acrosstool_journal/widgets/calendar_chrome_overlay.dart';
 import 'package:acrosstool_journal/widgets/category_tab_bar.dart';
 import 'package:acrosstool_journal/widgets/journal_calendar.dart';
 import 'package:flutter/material.dart';
@@ -58,8 +59,20 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.byIcon(Icons.sync_alt), findsOneWidget);
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.text('AcrossTool Journal'), findsNothing);
     expect(find.byType(AcrossToolMainScreen), findsOneWidget);
+    expect(find.text('통계'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('category-settings-menu')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('settings-branding-title')), findsOneWidget);
+    expect(find.text('AcrossTool Journal'), findsOneWidget);
+    expect(find.text('가져오기'), findsOneWidget);
+    expect(find.text('달력 글자 크기'), findsOneWidget);
+    expect(find.text('항목 입력 방식'), findsOneWidget);
+    expect(find.text('8pt'), findsOneWidget);
   });
 
   testWidgets('Layout shows category tabs and full-width calendar', (tester) async {
@@ -113,15 +126,15 @@ void main() {
     final screenBottom =
         scaffoldBox.localToGlobal(Offset(0, scaffoldBox.size.height)).dy;
 
+    final expectedGridHeight =
+        calendarBox.size.height - CalendarChromeMetrics.overlayHeight;
+
     expect(screenBottom - gridBottom, closeTo(0, 4));
     expect(
       calendarBox.size.height,
-      closeTo(900, 5),
+      closeTo(900 - CategoryTabBar.totalHeight, 5),
     );
-    expect(
-      gridBox.size.height,
-      greaterThan(calendarBox.size.height * 0.88),
-    );
+    expect(gridBox.size.height, closeTo(expectedGridHeight, 5));
   });
 
   testWidgets('Data transfer button opens import export dialog', (tester) async {
@@ -136,9 +149,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    await tester.tap(find.byIcon(Icons.sync_alt));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(const Key('category-settings-menu')));
+    await tester.pumpAndSettle();
+
+    final importMenuItem = find.widgetWithText(PopupMenuItem<String>, '가져오기');
+    await tester.ensureVisible(importMenuItem);
+    await tester.tap(importMenuItem);
+    await tester.pumpAndSettle();
 
     expect(find.text('데이터 가져오기 /보내기'), findsOneWidget);
     expect(find.text('클립보드 복사'), findsOneWidget);
@@ -195,7 +212,7 @@ void main() {
 
     final tabList = find.descendant(
       of: find.byType(CategoryTabBar),
-      matching: find.byType(ListView),
+      matching: find.byType(SingleChildScrollView),
     );
     await tester.drag(tabList, const Offset(-500, 0));
     await tester.pumpAndSettle();

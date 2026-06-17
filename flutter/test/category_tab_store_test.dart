@@ -13,10 +13,18 @@ void main() {
     expect(CategoryTabStore.displayLabel(tabs[1], tabs), '1. 1');
   });
 
-  test('addBatchTabs adds up to 5 tabs until max 11', () {
-    final batch = CategoryTabStore.addBatchTabs(CategoryTabStore.defaultTabs());
-    expect(batch, isNotNull);
-    expect(batch, hasLength(11));
+  test('addBatchTabs adds one tab at a time until max 11', () {
+    var tabs = CategoryTabStore.defaultTabs();
+    expect(tabs, hasLength(6));
+
+    tabs = CategoryTabStore.addBatchTabs(tabs)!;
+    expect(tabs, hasLength(7));
+
+    while (tabs.length < JournalCategoryTab.maxTabs) {
+      tabs = CategoryTabStore.addBatchTabs(tabs)!;
+    }
+    expect(tabs, hasLength(11));
+    expect(CategoryTabStore.addBatchTabs(tabs), isNull);
   });
 
   test('renameTab updates editable tab title', () {

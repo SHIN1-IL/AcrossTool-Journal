@@ -2,10 +2,11 @@ import 'package:acrosstool_journal/utils/calendar_date_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('visibleDaysForMonth returns 42 days starting on Sunday column', () {
+  test('visibleDaysForMonth returns needed rows starting on Sunday column', () {
     final days = CalendarDateUtils.visibleDaysForMonth(DateTime(2026, 6, 1));
 
-    expect(days, hasLength(42));
+    expect(CalendarDateUtils.weekRowCountForMonth(DateTime(2026, 6, 1)), 5);
+    expect(days, hasLength(35));
     expect(days.first.weekday, DateTime.sunday);
     expect(days.any((day) => day.day == 11 && day.month == 6), isTrue);
   });

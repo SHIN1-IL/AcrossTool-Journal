@@ -1,0 +1,31 @@
+---
+description: Flutter UI 변경 후 브라우저(dev web) 반영 절차
+globs: flutter/**/*
+alwaysApply: false
+---
+
+# Flutter 브라우저 반영
+
+`flutter/lib/`, `flutter/web/`, `flutter/test/` 등 UI·동작 코드를 수정한 뒤 **작업을 마치기 전에** dev web 서버 상태를 확인한다.
+
+## 절차
+
+1. **서버 확인**
+   ```bash
+   cd flutter && ./scripts/check-dev-web.sh
+   ```
+
+2. **코드 변경 후 재시작** (UI가 안 바뀌면 필수)
+   ```bash
+   cd flutter && ./scripts/ensure-dev-web.sh --reload
+   ```
+   백그라운드로 올라가며 `http://localhost:8080` 응답을 기다린다.
+
+3. **사용자 안내** — 브라우저에서 **Cmd+Shift+R** 강력 새로고침.
+
+## 규칙
+
+- Flutter UI/UX 작업을 완료했다고 답하기 전에 `check-dev-web.sh` 또는 `ensure-dev-web.sh --reload`를 실행한다.
+- `check-dev-web.sh`가 DOWN이면 `ensure-dev-web.sh --reload`로 서버를 올린다.
+- 캐시 의심 시 `flutter clean` 후 `restart-dev-web.sh` (포그라운드)를 제안한다.
+- dev URL: **http://localhost:8080**

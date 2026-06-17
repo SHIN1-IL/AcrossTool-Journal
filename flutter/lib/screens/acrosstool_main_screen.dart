@@ -4,12 +4,16 @@ import '../models/category_store.dart';
 import '../models/category_tab_store.dart';
 import '../models/completion_rate.dart';
 import '../models/journal_category_tab.dart';
+import '../models/task_importance.dart';
 import '../models/task_slot.dart';
 import '../repositories/preferences_repository.dart';
 import '../repositories/task_repository.dart';
 import '../services/journal_data_service.dart';
 import '../utils/category_theme.dart';
+import '../utils/calendar_font_settings.dart';
+import '../utils/category_input_layout.dart';
 import '../widgets/analytics_panel.dart';
+import '../widgets/category_manage_dialog.dart';
 import '../widgets/category_tab_bar.dart';
 import '../widgets/journal_calendar.dart';
 import '../widgets/journal_data_dialog.dart';
@@ -34,12 +38,12 @@ class AcrossToolMainScreen extends StatefulWidget {
 class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
     with WidgetsBindingObserver {
   DateTime _selectedDay = DateTime.now();
-  List<TaskSlot> _tasks = [];
   List<JournalCategoryTab> _categoryTabs = CategoryTabStore.defaultTabs();
   String _selectedTabId = JournalCategoryTab.overviewId;
   String _calendarTabId = JournalCategoryTab.overviewId;
-  bool _isLoading = true;
-  int _loadGeneration = 0;
+  int _calendarTaskFontPt = CalendarFontSettings.defaultPtSize;
+  CategoryInputLayoutPreference _categoryInputLayout =
+      CategoryInputLayoutPreference.auto;
   late final JournalDataService _journalDataService;
 
   JournalCategoryTab get _activeTab =>
@@ -53,8 +57,6 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
   bool get _isAnalyticsMode =>
       _selectedTabId == JournalCategoryTab.analyticsId;
 
-  bool get _isOverviewMode => _activeTab.isOverview && !_isAnalyticsMode;
-
   Map<String, Color> get _categoryColors {
     return {
       for (final tab in _categoryTabs.where((tab) => !tab.isOverview))
@@ -64,8 +66,6 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
     };
   }
 
-  Color get _pageBackgroundColor => _activeTab.backgroundColor;
-
   CompletionRateMap get _calendarCompletionRates {
     final filter = _calendarTab.isOverview
         ? CategoryStore.filterAll
@@ -73,15 +73,6 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
     return buildCompletionRateMap(
       widget.taskRepository.loadStore(),
       filter,
-    );
-  }
-
-  List<TaskSlot> get _displayTasks {
-    return CategoryTabStore.filterTasksForTab(
-      _tasks,
-      _activeTab,
-      includeEmptyLabels: !_isOverviewMode,
-      sortByTime: !_isOverviewMode,
     );
   }
 
@@ -94,7 +85,6 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
       preferencesRepository: widget.preferencesRepository,
     );
     _loadPreferences();
-    _loadTasksForSelectedDay();
   }
 
   @override
@@ -119,34 +109,48 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
       _calendarTabId = _selectedTabId == JournalCategoryTab.analyticsId
           ? JournalCategoryTab.overviewId
           : _selectedTabId;
+      _calendarTaskFontPt =
+          widget.preferencesRepository.loadCalendarTaskFontPt();
+      _categoryInputLayout =
+          widget.preferencesRepository.loadCategoryInputLayout();
     });
   }
 
-  Future<void> _loadTasksForSelectedDay() async {
-    final generation = ++_loadGeneration;
-    final tasks = await widget.taskRepository.ensureTasksForDate(_selectedDay);
-    if (!mounted || generation != _loadGeneration) {
-      return;
+  Future<void> _onCategoryInputLayoutChanged(
+    CategoryInputLayoutPreference layout,
+  ) async {
+    setState(() => _categoryInputLayout = layout);
+    await widget.preferencesRepository.saveCategoryInputLayout(layout);
+  }
+
+  bool _categoryUsesBottomSheet(BuildContext context) {
+    if (_calendarTab.isOverview || _calendarTab.isAnalytics) {
+      return false;
     }
-    setState(() {
-      _tasks = tasks;
-      _isLoading = false;
-    });
+    return CategoryInputLayout.useBottomSheet(
+      context: context,
+      preference: _categoryInputLayout,
+    );
+  }
+
+  Future<void> _onCalendarTaskFontPtChanged(int pt) async {
+    final sanitized = CalendarFontSettings.sanitize(pt);
+    setState(() => _calendarTaskFontPt = sanitized);
+    await widget.preferencesRepository.saveCalendarTaskFontPt(sanitized);
   }
 
   Future<void> _onDaySelected(DateTime day) async {
-    setState(() {
-      _selectedDay = day;
-      _isLoading = true;
-    });
-    _loadGeneration++;
-    await _loadTasksForSelectedDay();
-
+    setState(() => _selectedDay = day);
     if (!mounted) {
       return;
     }
-
-    _showDayBottomSheet();
+    if (_calendarTab.isOverview) {
+      _showDayBottomSheet();
+      return;
+    }
+    if (_categoryUsesBottomSheet(context)) {
+      _showDayBottomSheet();
+    }
   }
 
   Future<void> _onTabSelected(JournalCategoryTab tab) async {
@@ -206,61 +210,75 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
       }
     });
     await widget.preferencesRepository.saveSelectedTabId(_selectedTabId);
-    await _loadTasksForSelectedDay();
+    setState(() {});
   }
 
-  Future<void> _mutateTasks(
-    Future<List<TaskSlot>> Function() mutation,
-  ) async {
-    _loadGeneration++;
-    final tasks = await mutation();
+  Future<void> _refreshAfterCalendarMutation(DateTime day) async {
     if (!mounted) {
       return;
     }
-    setState(() {
-      _tasks = tasks;
-      _isLoading = false;
-    });
+    setState(() {});
   }
 
-  Future<void> _onToggleTask(int taskId) async {
-    await _mutateTasks(
-      () => widget.taskRepository.toggleTask(_selectedDay, taskId),
-    );
+  Future<void> _onCalendarTaskToggle(DateTime day, int taskId) async {
+    await widget.taskRepository.toggleTask(day, taskId);
+    await _refreshAfterCalendarMutation(day);
   }
 
-  Future<void> _onLabelChanged(int taskId, String label) async {
-    await _mutateTasks(
-      () => widget.taskRepository.updateTaskLabel(
-        _selectedDay,
-        taskId,
-        label,
-      ),
-    );
+  Future<int> _onEnsureCategoryTask(DateTime day, String category) async {
+    return widget.taskRepository.ensureSingleCategoryTask(day, category);
   }
 
-  Future<void> _onTimeChanged(int taskId, String time) async {
-    await _mutateTasks(
-      () => widget.taskRepository.updateTaskTime(
-        _selectedDay,
-        taskId,
-        time,
-      ),
-    );
+  Future<void> _onCategoryTaskHeaderChanged(
+    DateTime day,
+    int taskId,
+    String header,
+  ) async {
+    await widget.taskRepository.updateTaskHeader(day, taskId, header);
+    await _refreshAfterCalendarMutation(day);
   }
 
-  Future<void> _onAddTask() async {
-    await _mutateTasks(
-      () => widget.taskRepository.addTask(
-        _selectedDay,
-        category: _activeTab.title,
-      ),
-    );
+  Future<void> _onCategoryTaskLabelChanged(
+    DateTime day,
+    int taskId,
+    String label,
+  ) async {
+    await widget.taskRepository.updateTaskLabel(day, taskId, label);
+    await _refreshAfterCalendarMutation(day);
   }
 
-  Future<void> _onRemoveTask(int taskId) async {
-    await _mutateTasks(
-      () => widget.taskRepository.removeTask(_selectedDay, taskId),
+  Future<void> _onCategoryTaskNotesChanged(
+    DateTime day,
+    int taskId,
+    String notes,
+  ) async {
+    await widget.taskRepository.updateTaskNotes(day, taskId, notes);
+    await _refreshAfterCalendarMutation(day);
+  }
+
+  Future<void> _onCategoryTaskImportanceChanged(
+    DateTime day,
+    int taskId,
+    TaskImportance importance,
+  ) async {
+    await widget.taskRepository.updateTaskImportance(day, taskId, importance);
+    await _refreshAfterCalendarMutation(day);
+  }
+
+  Future<void> _onCategoryTaskUsageHoursChanged(
+    DateTime day,
+    int taskId,
+    int usageHours,
+  ) async {
+    await widget.taskRepository.updateTaskUsageHours(day, taskId, usageHours);
+    await _refreshAfterCalendarMutation(day);
+  }
+
+  void _showCategoryManageDialog() {
+    CategoryManageDialog.show(
+      context,
+      tabs: _categoryTabs,
+      onDeleteTab: _onTabRemoved,
     );
   }
 
@@ -270,10 +288,11 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
       builder: (dialogContext) {
         return JournalDataDialog(
           service: _journalDataService,
-          onImported: () async {
+          onImported: () {
             _loadPreferences();
-            _loadGeneration++;
-            await _loadTasksForSelectedDay();
+            if (mounted) {
+              setState(() {});
+            }
           },
         );
       },
@@ -281,7 +300,14 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
   }
 
   void _showDayBottomSheet() {
-    final sheetHeight = MediaQuery.of(context).size.height * 0.58;
+    if (_calendarTab.isAnalytics) {
+      return;
+    }
+
+    final sheetHeight = MediaQuery.of(context).size.height * 0.72;
+    final activeTab = _calendarTab;
+    final readOnly = activeTab.isOverview;
+    final singleCategoryTaskMode = !readOnly && !activeTab.isAnalytics;
 
     showModalBottomSheet<void>(
       context: context,
@@ -290,27 +316,27 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
           child: SizedBox(
             height: sheetHeight,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              child: TimelinePanel(
+              child: _DayScheduleSheet(
                 selectedDay: _selectedDay,
-                tasks: _displayTasks,
-                activeTab: _activeTab,
+                activeTab: activeTab,
                 categoryColors: _categoryColors,
-                isLoading: _isLoading,
-                readOnly: _isOverviewMode,
-                onToggle: _isOverviewMode ? null : _onToggleTask,
-                onLabelChanged: _isOverviewMode ? null : _onLabelChanged,
-                onTimeChanged: _isOverviewMode ? null : _onTimeChanged,
-                onAdd: _isOverviewMode ? null : _onAddTask,
-                onRemove: _isOverviewMode ? null : _onRemoveTask,
+                taskRepository: widget.taskRepository,
+                readOnly: readOnly,
+                singleCategoryTaskMode: singleCategoryTaskMode,
+                onTasksChanged: () {
+                  if (mounted) {
+                    setState(() {});
+                  }
+                },
               ),
             ),
           ),
@@ -329,77 +355,260 @@ class _AcrossToolMainScreenState extends State<AcrossToolMainScreen>
 
   @override
   Widget build(BuildContext context) {
-    final viewportHeight = MediaQuery.sizeOf(context).height;
-    final headerHeight = CategoryTabBar.barHeight;
+    final headerHeight = CategoryTabBar.totalHeight;
 
     return Scaffold(
-      backgroundColor: _pageBackgroundColor,
+      backgroundColor: CategoryTheme.appBackground,
       resizeToAvoidBottomInset: false,
-      body: SizedBox(
-        height: viewportHeight,
-        width: double.infinity,
-        child: Stack(
-          clipBehavior: Clip.hardEdge,
-          children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: CategoryTheme.calendarGradientFor(
-                    _calendarTab,
+      body: MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        removeBottom: true,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SizedBox(
+              height: constraints.maxHeight,
+              width: constraints.maxWidth,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(
+                    child: Column(
+                      children: [
+                        SizedBox(height: headerHeight),
+                        Expanded(
+                          child: JournalCalendar(
+                            selectedDay: _selectedDay,
+                            completionRates: _calendarCompletionRates,
+                            taskStore: widget.taskRepository.loadStore(),
+                            activeTab: _calendarTab,
+                            categoryTabs: _categoryTabs,
+                            taskFontPt: _calendarTaskFontPt,
+                            categoryInlineEdit:
+                                !_categoryUsesBottomSheet(context),
+                            onDaySelected: _onDaySelected,
+                            onMonthEndReport: _showMonthlyReport,
+                            onEnsureCategoryTask: _onEnsureCategoryTask,
+                            onCategoryTaskToggle: _onCalendarTaskToggle,
+                            onCategoryTaskHeaderChanged:
+                                _onCategoryTaskHeaderChanged,
+                            onCategoryTaskLabelChanged:
+                                _onCategoryTaskLabelChanged,
+                            onCategoryTaskNotesChanged:
+                                _onCategoryTaskNotesChanged,
+                            onCategoryTaskImportanceChanged:
+                                _onCategoryTaskImportanceChanged,
+                            onCategoryTaskUsageHoursChanged:
+                                _onCategoryTaskUsageHoursChanged,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: JournalCalendar(
-                  selectedDay: _selectedDay,
-                  completionRates: _calendarCompletionRates,
-                  taskStore: widget.taskRepository.loadStore(),
-                  activeTab: _calendarTab,
-                  topContentInset: headerHeight,
-                  onDaySelected: _onDaySelected,
-                  onMonthEndReport: _showMonthlyReport,
-                ),
-              ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: CategoryTabBar(
-                tabs: _categoryTabs,
-                selectedTabId: _selectedTabId,
-                onTabSelected: _onTabSelected,
-                onTabRenamed: _onTabRenamed,
-                onBatchTabsAdded: _onBatchTabsAdded,
-                onTabRemoved: _onTabRemoved,
-                onAnalyticsSelected: _onAnalyticsSelected,
-              ),
-            ),
-            if (!_isAnalyticsMode)
-              Positioned(
-                top: headerHeight + 2,
-                right: 0,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.sync_alt,
-                    size: 20,
-                    color: _calendarTab.accentColor.withValues(alpha: 0.7),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: CategoryTabBar(
+                      tabs: _categoryTabs,
+                      selectedTabId: _selectedTabId,
+                      onTabSelected: _onTabSelected,
+                      onTabRenamed: _onTabRenamed,
+                      onBatchTabsAdded: _onBatchTabsAdded,
+                      onAnalyticsSelected: _onAnalyticsSelected,
+                      onManageCategories: _showCategoryManageDialog,
+                      onDataTransfer: _showDataTransferDialog,
+                      calendarTaskFontPt: _calendarTaskFontPt,
+                      onCalendarTaskFontPtChanged: _onCalendarTaskFontPtChanged,
+                      categoryInputLayout: _categoryInputLayout,
+                      onCategoryInputLayoutChanged: _onCategoryInputLayoutChanged,
+                    ),
                   ),
-                  tooltip: '데이터 가져오기 /보내기',
-                  onPressed: _showDataTransferDialog,
-                ),
+                  if (_isAnalyticsMode)
+                    Positioned(
+                      top: headerHeight,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: const AnalyticsPanel(
+                        key: Key('analytics-panel-view'),
+                      ),
+                    ),
+                ],
               ),
-            if (_isAnalyticsMode)
-              Positioned(
-                top: headerHeight,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: const AnalyticsPanel(
-                  key: Key('analytics-panel-view'),
-                ),
-              ),
-          ],
+            );
+          },
         ),
       ),
+    );
+  }
+}
+
+/// 날짜별 일정 바텀 시트 — 추가·수정 후 자체 setState로 UI를 즉시 갱신합니다.
+class _DayScheduleSheet extends StatefulWidget {
+  const _DayScheduleSheet({
+    required this.selectedDay,
+    required this.activeTab,
+    required this.categoryColors,
+    required this.taskRepository,
+    required this.readOnly,
+    required this.singleCategoryTaskMode,
+    required this.onTasksChanged,
+  });
+
+  final DateTime selectedDay;
+  final JournalCategoryTab activeTab;
+  final Map<String, Color> categoryColors;
+  final TaskRepository taskRepository;
+  final bool readOnly;
+  final bool singleCategoryTaskMode;
+  final VoidCallback onTasksChanged;
+
+  @override
+  State<_DayScheduleSheet> createState() => _DayScheduleSheetState();
+}
+
+class _DayScheduleSheetState extends State<_DayScheduleSheet> {
+  List<TaskSlot> _tasks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
+  List<TaskSlot> get _displayTasks {
+    final filtered = CategoryTabStore.filterTasksForTab(
+      _tasks,
+      widget.activeTab,
+      includeEmptyLabels: !widget.readOnly,
+      sortByTime: !widget.readOnly && !widget.singleCategoryTaskMode,
+    );
+    if (!widget.singleCategoryTaskMode) {
+      return filtered;
+    }
+    return filtered.take(1).toList();
+  }
+
+  Future<void> _loadTasks() async {
+    if (widget.singleCategoryTaskMode) {
+      await widget.taskRepository.ensureSingleCategoryTask(
+        widget.selectedDay,
+        widget.activeTab.title,
+      );
+    }
+    final tasks =
+        await widget.taskRepository.ensureTasksForDate(widget.selectedDay);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _tasks = tasks;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _mutateTasks(
+    Future<List<TaskSlot>> Function() mutation,
+  ) async {
+    final tasks = await mutation();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _tasks = tasks);
+    widget.onTasksChanged();
+  }
+
+  Future<void> _onAddTask() async {
+    await _mutateTasks(
+      () => widget.taskRepository.addTask(
+        widget.selectedDay,
+        category: widget.activeTab.title,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TimelinePanel(
+      selectedDay: widget.selectedDay,
+      tasks: _displayTasks,
+      activeTab: widget.activeTab,
+      categoryColors: widget.categoryColors,
+      isLoading: _isLoading,
+      readOnly: widget.readOnly,
+      onToggle: widget.readOnly
+          ? null
+          : (taskId) => _mutateTasks(
+                () => widget.taskRepository.toggleTask(
+                  widget.selectedDay,
+                  taskId,
+                ),
+              ),
+      onLabelChanged: widget.readOnly
+          ? null
+          : (taskId, label) => _mutateTasks(
+                () => widget.taskRepository.updateTaskLabel(
+                  widget.selectedDay,
+                  taskId,
+                  label,
+                ),
+              ),
+      onTimeChanged: widget.readOnly
+          ? null
+          : (taskId, time) => _mutateTasks(
+                () => widget.taskRepository.updateTaskTime(
+                  widget.selectedDay,
+                  taskId,
+                  time,
+                ),
+              ),
+      onHeaderChanged: widget.readOnly
+          ? null
+          : (taskId, header) => _mutateTasks(
+                () => widget.taskRepository.updateTaskHeader(
+                  widget.selectedDay,
+                  taskId,
+                  header,
+                ),
+              ),
+      onImportanceChanged: widget.readOnly
+          ? null
+          : (taskId, importance) => _mutateTasks(
+                () => widget.taskRepository.updateTaskImportance(
+                  widget.selectedDay,
+                  taskId,
+                  importance,
+                ),
+              ),
+      onUsageHoursChanged: widget.readOnly
+          ? null
+          : (taskId, hours) => _mutateTasks(
+                () => widget.taskRepository.updateTaskUsageHours(
+                  widget.selectedDay,
+                  taskId,
+                  hours,
+                ),
+              ),
+      onNotesChanged: widget.readOnly
+          ? null
+          : (taskId, notes) => _mutateTasks(
+                () => widget.taskRepository.updateTaskNotes(
+                  widget.selectedDay,
+                  taskId,
+                  notes,
+                ),
+              ),
+      onAdd: widget.readOnly || widget.singleCategoryTaskMode ? null : _onAddTask,
+      onRemove: widget.readOnly || widget.singleCategoryTaskMode
+          ? null
+          : (taskId) => _mutateTasks(
+                () => widget.taskRepository.removeTask(
+                  widget.selectedDay,
+                  taskId,
+                ),
+              ),
     );
   }
 }

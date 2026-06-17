@@ -4,66 +4,75 @@ import '../models/journal_category_tab.dart';
 
 /// 카테고리·달력 UI 스타일 상수 (Flutter Theme/CSS 변수 대응).
 abstract final class CategoryTheme {
-  static const double chipMinWidth = 64;
-  static const double chipHeight = 34;
+  // ── App-wide colors ──
+  static const Color appBackground = Color(0xFFFFFFFF);
+  static const Color appText = Color(0xFF000000);
+  static const Color appTextMuted = Color(0xFF666666);
+  static const Color appBorder = Color(0xFFE5E7EB);
+  static const String appName = 'AcrossTool Journal';
+
+  static const double chipMinWidth = 56;
+  static const double chipHeight = 28;
+  static const double chipHeightUnselected = 24;
   static const FontWeight chipFontWeight = FontWeight.w500;
-  static const double chipFontSize = 12.5;
+  static const double chipFontSize = 11.5;
 
-  // ── Modern category bar tokens ──
-  static const double headerBarHeight = 52;
-  static const double tabPillRadius = 18;
-  static const double tabColorDotSize = 7;
-  static const double tabIconSize = 14;
+  // ── Diary-style category tab tokens ──
+  static const double headerBarHeight = 33;
+  static const double headerTotalHeight = headerBarHeight;
+  /// 우측 툴바(구분선·통계·설정·여백) 열 너비.
+  static const double headerToolbarWidth = 85;
+  static const double tabTopRadius = 7;
+  static const double tabColorDotSize = 6;
+  static const double tabIconSize = 12;
+  static const double tabCalendarBridgeHeight = 4;
 
-  static const Color headerOverlayBorder = Color(0x1FFFFFFF);
-  static const Color tabSelectedFill = Color(0xFFF8FAFC);
-  static const Color tabUnselectedFill = Color(0x14FFFFFF);
-  static const Color tabSelectedBorder = Color(0x33FFFFFF);
-  static const Color tabUnselectedBorder = Color(0x1AFFFFFF);
-  static const Color tabSelectedText = Color(0xFF0F172A);
-  static const Color tabUnselectedText = Color(0xFFE2E8F0);
-  static const Color toolbarDivider = Color(0x24FFFFFF);
-  static const Color toolbarIconMuted = Color(0xFF94A3B8);
-  static const Color toolbarIconActive = Color(0xFFE2E8F0);
+  static BorderRadius get diaryTabRadius => const BorderRadius.only(
+        topLeft: Radius.circular(tabTopRadius),
+        topRight: Radius.circular(tabTopRadius),
+      );
+
+  static const Color headerBackground = appBackground;
+  static const Color headerOverlayBorder = appBorder;
+  static const Color tabSelectedFill = appBackground;
+  static const Color tabUnselectedFill = appBackground;
+  static const Color tabSelectedBorder = Color(0xFFD1D5DB);
+  static const Color tabUnselectedBorder = appBorder;
+  static const double tabSelectedBorderWidth = 1.2;
+  static const double tabUnselectedBorderWidth = 1;
+  static const Color tabSelectedText = appText;
+  static const Color tabUnselectedText = appTextMuted;
+  static const Color toolbarDivider = appBorder;
+  static const Color toolbarIconMuted = Color(0xFF6B7280);
+  static const Color toolbarIconActive = Color(0xFF374151);
+  static const Color appBrandingText = Color(0xFF6B7280);
 
   static List<BoxShadow> tabSelectedShadow(Color accent) => [
         BoxShadow(
-          color: accent.withValues(alpha: 0.28),
-          blurRadius: 12,
-          offset: const Offset(0, 3),
-        ),
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.12),
-          blurRadius: 4,
-          offset: const Offset(0, 1),
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 2,
+          offset: const Offset(0, -1),
         ),
       ];
 
-  static const Color calendarDateText = Colors.white;
-  static const Color calendarWeekdayText = Color(0xE6FFFFFF);
-  static const Color calendarMonthTitleText = Colors.white;
-  static const Color calendarCellFill = Color(0x33FFFFFF);
-  static const Color calendarCellBorder = Color(0x4DFFFFFF);
-  static const Color calendarSelectedCellFill = Color(0x66FFFFFF);
+  static const Color calendarDateText = appText;
+  static const Color calendarWeekdayText = appTextMuted;
+  static const Color calendarMonthTitleText = appText;
+  static const Color calendarCellFill = appBackground;
+  static const Color calendarCellBorder = appBorder;
+  static const Color calendarSelectedCellFill = appBackground;
+  static const Color calendarOutsideCellFill = appBackground;
 
-  static const Color analyticsAccent = Color(0xFF60A5FA);
-  static const Color analyticsBackground = Color(0xFF202124);
+  static const Color analyticsAccent = Color(0xFF2563EB);
+  static const Color analyticsBackground = appBackground;
 
   static LinearGradient calendarGradientFor(JournalCategoryTab tab) {
-    final base = tab.isAnalytics
-        ? analyticsBackground
-        : tab.isOverview
-            ? const Color(0xFF7A8699)
-            : tab.accentColor;
-
-    return LinearGradient(
+    return const LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [
-        base.withValues(alpha: 0.42),
-        base.withValues(alpha: 0.28),
-        base.withValues(alpha: 0.18),
-      ],
+      colors: [appBackground, appBackground],
     );
   }
+
+  static Color calendarBackgroundFor(JournalCategoryTab tab) => appBackground;
 }

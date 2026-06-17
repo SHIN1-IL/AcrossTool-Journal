@@ -3,6 +3,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/category_store.dart';
 import '../models/category_tab_store.dart';
 import '../models/journal_category_tab.dart';
+import '../utils/calendar_font_settings.dart';
+import '../utils/category_input_layout.dart';
 
 /// Hive 기반 사용자 카테고리·필터 설정. 웹 `preferencesStorage.ts` 대응.
 class PreferencesRepository {
@@ -13,6 +15,10 @@ class PreferencesRepository {
   static const selectedFilterKey = 'selectedFilter';
   static const categoryTabsKey = 'categoryTabs';
   static const selectedTabIdKey = 'selectedTabId';
+  static const calendarTaskFontPtKey = 'calendarTaskFontPt';
+  static const categoryInputLayoutKey = 'categoryInputLayout';
+  static const taskStoreResetVersionKey = 'taskStoreResetVersion';
+  static const currentTaskStoreResetVersion = 1;
 
   final Box<dynamic> _box;
 
@@ -95,6 +101,50 @@ class PreferencesRepository {
     } else {
       await saveSelectedFilter(CategoryStore.filterAll);
     }
+  }
+
+  int loadCalendarTaskFontPt() {
+    final value = _box.get(calendarTaskFontPtKey);
+    if (value is int) {
+      return CalendarFontSettings.sanitize(value);
+    }
+    if (value is double) {
+      return CalendarFontSettings.sanitize(value.round());
+    }
+    return CalendarFontSettings.defaultPtSize;
+  }
+
+  Future<void> saveCalendarTaskFontPt(int pt) async {
+    await _box.put(
+      calendarTaskFontPtKey,
+      CalendarFontSettings.sanitize(pt),
+    );
+  }
+
+  CategoryInputLayoutPreference loadCategoryInputLayout() {
+    final value = _box.get(categoryInputLayoutKey);
+    if (value is String) {
+      return CategoryInputLayout.parsePreference(value);
+    }
+    return CategoryInputLayoutPreference.auto;
+  }
+
+  Future<void> saveCategoryInputLayout(
+    CategoryInputLayoutPreference layout,
+  ) async {
+    await _box.put(categoryInputLayoutKey, layout.name);
+  }
+
+  bool needsTaskStoreReset() {
+    final version = _box.get(taskStoreResetVersionKey);
+    if (version is! int) {
+      return true;
+    }
+    return version < currentTaskStoreResetVersion;
+  }
+
+  Future<void> markTaskStoreResetDone() async {
+    await _box.put(taskStoreResetVersionKey, currentTaskStoreResetVersion);
   }
 
   Future<void> hydrateDefaults(List<String> filterOptions) async {

@@ -15,8 +15,7 @@ typedef CompletionRateMap = Map<String, CompletionDayEntry>;
 
 /// 웹 MVP `completionRate.ts`와 동일한 완료율 계산·티어 로직.
 int? calculateCompletionRate(List<TaskSlot> tasks) {
-  final activeTasks =
-      tasks.where((task) => task.label.trim().isNotEmpty).toList();
+  final activeTasks = tasks.where((task) => task.hasContent).toList();
   if (activeTasks.isEmpty) {
     return null;
   }

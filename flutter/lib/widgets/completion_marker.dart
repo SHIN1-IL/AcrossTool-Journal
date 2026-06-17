@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/completion_rate.dart';
+import '../utils/category_theme.dart';
 
 /// 웹 MVP `CompletionMarker.tsx` 대응 — 티어별 원형 마커.
 class CompletionMarker extends StatelessWidget {
@@ -39,7 +40,7 @@ class CompletionMarker extends StatelessWidget {
           color: tierColor(tier),
           shape: BoxShape.circle,
           border: selected
-              ? Border.all(color: Colors.white.withValues(alpha: 0.9))
+              ? Border.all(color: CategoryTheme.appText.withValues(alpha: 0.35))
               : null,
         ),
       ),

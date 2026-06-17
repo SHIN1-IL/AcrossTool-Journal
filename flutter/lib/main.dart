@@ -13,6 +13,10 @@ Future<void> main() async {
     await initializeDateFormatting('ko_KR');
     final taskRepository = await TaskRepository.create();
     final preferencesRepository = await PreferencesRepository.create();
+    if (preferencesRepository.needsTaskStoreReset()) {
+      await taskRepository.clearAllTasks();
+      await preferencesRepository.markTaskStoreResetDone();
+    }
     runApp(
       AcrossToolJournalApp(
         taskRepository: taskRepository,
@@ -63,8 +67,29 @@ class AcrossToolJournalApp extends StatelessWidget {
         Locale('ko', 'KR'),
       ],
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: Colors.white,
+        canvasColor: Colors.white,
+        cardColor: Colors.white,
+        dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
+        colorScheme: const ColorScheme.light(
+          surface: Colors.white,
+          onSurface: Colors.black,
+          primary: Colors.black,
+          onPrimary: Colors.white,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+        iconTheme: const IconThemeData(color: Colors.black),
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: Colors.black),
+          bodyLarge: TextStyle(color: Colors.black),
+          titleMedium: TextStyle(color: Colors.black),
+        ),
       ),
       home: AcrossToolMainScreen(
         taskRepository: taskRepository,

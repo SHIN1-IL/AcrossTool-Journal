@@ -1,5 +1,6 @@
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../models/task_importance.dart';
 import '../models/task_slot.dart';
 import '../utils/date_key.dart';
 import '../utils/time_format.dart';
@@ -105,6 +106,106 @@ class TaskRepository {
     });
   }
 
+  Future<List<TaskSlot>> updateTaskHeader(
+    DateTime date,
+    int taskId,
+    String header,
+  ) async {
+    return _updateTaskForField(date, taskId, (task) => task.copyWith(header: header));
+  }
+
+  Future<List<TaskSlot>> updateTaskImportance(
+    DateTime date,
+    int taskId,
+    TaskImportance importance,
+  ) async {
+    return _updateTaskForField(
+      date,
+      taskId,
+      (task) => task.copyWith(importance: importance),
+    );
+  }
+
+  Future<List<TaskSlot>> updateTaskUsageHours(
+    DateTime date,
+    int taskId,
+    int usageHours,
+  ) async {
+    return _updateTaskForField(
+      date,
+      taskId,
+      (task) => task.copyWith(
+        usageHours: usageHours.clamp(0, TaskSlot.maxUsageHours),
+      ),
+    );
+  }
+
+  Future<List<TaskSlot>> updateTaskNotes(
+    DateTime date,
+    int taskId,
+    String notes,
+  ) async {
+    return _updateTaskForField(date, taskId, (task) => task.copyWith(notes: notes));
+  }
+
+  Future<List<TaskSlot>> _updateTaskForField(
+    DateTime date,
+    int taskId,
+    TaskSlot Function(TaskSlot task) transform,
+  ) async {
+    return _updateTasksForDate(date, (tasks) {
+      return tasks
+          .map((task) => task.id == taskId ? transform(task) : task)
+          .toList();
+    });
+  }
+
+  Future<int> ensureSingleCategoryTask(
+    DateTime date,
+    String category,
+  ) async {
+    final tasks = await _updateTasksForDate(date, (tasks) {
+      final categoryTasks =
+          tasks.where((task) => task.category == category).toList();
+      if (categoryTasks.isEmpty) {
+        final nextId = _nextTaskId(tasks);
+        return [
+          ...tasks,
+          TaskSlot(
+            id: nextId,
+            label: '',
+            completed: false,
+            category: category,
+            time: '09:00',
+          ),
+        ];
+      }
+
+      if (categoryTasks.length == 1) {
+        return tasks;
+      }
+
+      final keepId = categoryTasks.first.id;
+      return tasks
+          .where(
+            (task) => task.category != category || task.id == keepId,
+          )
+          .toList();
+    });
+
+    return tasks.firstWhere((task) => task.category == category).id;
+  }
+
+  TaskSlot? getSingleCategoryTask(DateTime date, String category) {
+    final tasks = getTasksForDate(date)
+        .where((task) => task.category == category)
+        .toList();
+    if (tasks.isEmpty) {
+      return null;
+    }
+    return tasks.first;
+  }
+
   Future<List<TaskSlot>> addTask(
     DateTime date, {
     required String category,
@@ -114,6 +215,9 @@ class TaskRepository {
     return _updateTasksForDate(date, (tasks) {
       final categoryTasks =
           tasks.where((task) => task.category == category).toList();
+      if (categoryTasks.length >= TaskSlot.maxSlots) {
+        return tasks;
+      }
       final nextTime = time ??
           suggestNextTime(categoryTasks.map((task) => task.time));
       final nextId = _nextTaskId(tasks);
@@ -210,50 +314,10 @@ class TaskRepository {
     return tasks.map((task) => task.id).reduce((a, b) => a > b ? a : b) + 1;
   }
 
-  static TaskStoreData createInitialTaskStore() {
-    return {
-      dateKey(DateTime.now()): _sampleTasks(),
-    };
-  }
+  static TaskStoreData createInitialTaskStore() => {};
 
-  static List<TaskSlot> _sampleTasks() {
-    return [
-      const TaskSlot(
-        id: 1,
-        label: '아침 스트레칭',
-        completed: true,
-        category: '운동',
-        time: '07:00',
-      ),
-      const TaskSlot(
-        id: 2,
-        label: '영어 단어 30개',
-        completed: false,
-        category: '학습',
-        time: '09:30',
-      ),
-      const TaskSlot(
-        id: 3,
-        label: '이메일 확인',
-        completed: false,
-        category: '업무',
-        time: '10:00',
-      ),
-      const TaskSlot(
-        id: 4,
-        label: '저녁 산책',
-        completed: false,
-        category: '운동',
-        time: '19:00',
-      ),
-      const TaskSlot(
-        id: 5,
-        label: '일기 작성',
-        completed: false,
-        category: '루틴',
-        time: '22:00',
-      ),
-    ];
+  Future<void> clearAllTasks() async {
+    await saveStore({});
   }
 
   static bool _isValidStore(dynamic value) {

@@ -51,9 +51,9 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF303134),
+        color: CategoryTheme.tabUnselectedFill,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: CategoryTheme.appBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -69,7 +69,7 @@ class _SectionCard extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: CategoryTheme.appText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -77,8 +77,8 @@ class _SectionCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     description,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.72),
+                    style: const TextStyle(
+                      color: CategoryTheme.appTextMuted,
                       fontSize: 13,
                       height: 1.45,
                     ),

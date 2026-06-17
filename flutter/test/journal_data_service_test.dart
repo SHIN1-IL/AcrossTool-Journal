@@ -33,6 +33,11 @@ void main() {
   test('exportJson includes task store and preferences', () async {
     await preferencesRepository.saveUserCategories(['취미']);
     await preferencesRepository.saveSelectedFilter('운동');
+    await taskRepository.addTask(
+      DateTime(2026, 1, 15),
+      category: '취미',
+      label: '아침 스트레칭',
+    );
 
     final json = service.exportJson();
     expect(json, contains('"version": 1'));

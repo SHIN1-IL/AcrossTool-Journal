@@ -212,13 +212,13 @@ class CategoryTabStore {
 
     final Iterable<TaskSlot> filtered;
     if (tab.isOverview) {
-      filtered = tasks.where((task) => task.label.trim().isNotEmpty);
+      filtered = tasks.where((task) => task.hasContent);
     } else {
       final byCategory =
           tasks.where((task) => task.category == tab.title);
       filtered = includeEmptyLabels
           ? byCategory
-          : byCategory.where((task) => task.label.trim().isNotEmpty);
+          : byCategory.where((task) => task.hasContent);
     }
 
     final result = filtered.toList();

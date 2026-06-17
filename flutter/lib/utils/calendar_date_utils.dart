@@ -2,7 +2,7 @@
 abstract final class CalendarDateUtils {
   static final DateTime firstDay = DateTime(2020, 1, 1);
   static final DateTime lastDay = DateTime(2035, 12, 31);
-  static const int weekRows = 6;
+  static const int maxWeekRows = 6;
 
   static const List<String> weekdayLabels = [
     '일',
@@ -28,12 +28,21 @@ abstract final class CalendarDateUtils {
   static DateTime monthForPageIndex(int index) =>
       DateTime(firstDay.year, firstDay.month + index);
 
+  /// 해당 월을 표시하는 데 필요한 주(행) 수 (4~6).
+  static int weekRowCountForMonth(DateTime month) {
+    final first = DateTime(month.year, month.month);
+    final daysBefore = first.weekday % 7;
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    return ((daysBefore + daysInMonth) + 6) ~/ 7;
+  }
+
   static List<DateTime> visibleDaysForMonth(DateTime month) {
+    final rowCount = weekRowCountForMonth(month);
     final first = DateTime(month.year, month.month);
     final daysBefore = first.weekday % 7;
     final firstToDisplay = first.subtract(Duration(days: daysBefore));
     return List.generate(
-      weekRows * 7,
+      rowCount * 7,
       (index) => DateTime(
         firstToDisplay.year,
         firstToDisplay.month,

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:acrosstool_journal/models/category_store.dart';
 import 'package:acrosstool_journal/models/journal_category_tab.dart';
 import 'package:acrosstool_journal/repositories/preferences_repository.dart';
+import 'package:acrosstool_journal/utils/calendar_font_settings.dart';
+import 'package:acrosstool_journal/utils/category_input_layout.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
@@ -41,5 +43,35 @@ void main() {
 
     expect(repository.loadSelectedTabId(), JournalCategoryTab.analyticsId);
     expect(repository.loadSelectedFilter(), CategoryStore.filterAll);
+  });
+
+  test('loads default calendar task font pt when empty', () {
+    expect(
+      repository.loadCalendarTaskFontPt(),
+      CalendarFontSettings.defaultPtSize,
+    );
+  });
+
+  test('persists calendar task font pt', () async {
+    await repository.saveCalendarTaskFontPt(12);
+
+    expect(repository.loadCalendarTaskFontPt(), 12);
+  });
+
+  test('persists category input layout', () async {
+    await repository.saveCategoryInputLayout(
+      CategoryInputLayoutPreference.bottomSheet,
+    );
+
+    expect(
+      repository.loadCategoryInputLayout(),
+      CategoryInputLayoutPreference.bottomSheet,
+    );
+  });
+
+  test('sanitizes invalid calendar task font pt', () async {
+    await repository.saveCalendarTaskFontPt(99);
+
+    expect(repository.loadCalendarTaskFontPt(), CalendarFontSettings.defaultPtSize);
   });
 }
